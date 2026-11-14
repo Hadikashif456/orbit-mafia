@@ -12,4 +12,10 @@
   --status-watch: #ffe0a3;
   --status-stable: #83e7f5;
   --status-optimal: #7cf5b0;
+  --chart-cri: #f8f4ff;
+  --chart-sleep: #83e7f5;
+  --chart-cardio: #b56cff;
+  --chart-radiation: #ffe0a3;
+  --chart-exercise: #7cf5b0;
+  --chart-mood: #f4a4cf;
 }

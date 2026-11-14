@@ -1,4 +1,6 @@
 :root {
+  --header-h: 6.5rem;
+  --detail-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1.1fr);
   --card-gap: clamp(16px, 2vw, 28px);
   --page-padding-x: clamp(16px, 4vw, 64px);
   --page-padding-y: clamp(20px, 4vh, 48px);
