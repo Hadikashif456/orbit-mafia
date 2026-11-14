@@ -1,0 +1,482 @@
+{
+  "C001:140": {
+    "summary": "Crew member C001 shows elevated inflammatory biomarker (CRP) on Sol 140.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is based on available data and NASA countermeasure protocols. It does not constitute a medical diagnosis or prescription. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C001:141": {
+    "summary": "Elevated inflammatory biomarker response (CRP) identified for crew member C001 on Sol 141.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is for operational awareness only and does not constitute medical diagnosis or prescription. Consult flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C001:142": {
+    "summary": "Elevated inflammatory biomarker response (CRP) identified for crew member C001 on mission Sol 142.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This advisory does not constitute medical diagnosis or treatment recommendation. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C001:143": {
+    "summary": "Elevated inflammatory biomarker (CRP) identified for crew member C001; predicted risk window 48 hours.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only and does not replace professional medical judgment. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C001:144": {
+    "summary": "Elevated inflammatory biomarker response (CRP) identified for crew member C001.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is based on available data and NASA countermeasure protocols. It does not constitute a medical diagnosis or prescription. Consult the flight surgeon when contact is possible for definitive medical evaluation.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C001:145": {
+    "summary": "Elevated inflammatory biomarker (CRP) identified for crew member C001; predicted risk window 48 hours.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only; consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C002:140": {
+    "summary": "Elevated inflammatory biomarker (CRP) identified for crew member C002; predicted risk window 48 hours.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is for operational awareness only and does not constitute a medical diagnosis. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C002:141": {
+    "summary": "Elevated inflammatory biomarker response detected; potential health impact.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is based on available data and does not replace professional medical evaluation. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C002:142": {
+    "summary": "Elevated inflammatory biomarker response detected; potential health risk.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance does not constitute medical diagnosis or prescription. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C002:143": {
+    "summary": "Elevated risk identified across radiation, inflammatory, cardiovascular, sleep, and psychosocial domains.",
+    "drivers": [
+      "Solar particle event acute radiation spike (9.0 mSv)",
+      "Elevated inflammatory biomarker response (CRP)",
+      "Cardiovascular strain: resting HR elevated (65 bpm) and HRV depressed (59 ms)",
+      "Cumulative sleep deficit",
+      "Reported isolation stress and mood rating decline"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Solar Particle Event Habitat Storm Shelter",
+        "protocol": "Immediately relocate crew to heavily shielded central storm shelter modules upon solar particle event alerts. Remain in sheltered configuration until active dosimeter telemetry measures baseline transit levels (<2.0 mSv/day).",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Cardiac Pacing and Workload Adjustment",
+        "protocol": "Reduce mission operational physical workload for crew exhibiting sustained elevated resting heart rate or suppressed HRV. Introduce dedicated restorative rest periods to allow autonomic stabilization.",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Autonomic Deconditioning and Fluid Rebalancing",
+        "protocol": "Ingest monitored fluid and electrolyte countermeasure solutions to counter microgravity-induced cephalad fluid shifts. Utilize lower body compression garments to support venous return and relieve cardiac strain.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This output provides risk flags and suggested countermeasures only; it does not constitute a medical diagnosis or prescription. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-storm-shelter",
+      "countermeasures.md#cardio-fluid-shift",
+      "countermeasures.md#cardio-workload-recovery"
+    ],
+    "mode": "cached"
+  },
+  "C002:144": {
+    "summary": "Elevated acute radiation exposure, autonomic/cardiovascular strain, sleep deficit, inflammatory response, and isolation stress identified.",
+    "drivers": [
+      "Solar particle event acute radiation spike (9.0 mSv)",
+      "Cardiovascular strain: resting HR elevated (69 bpm) and HRV depressed (54 ms)",
+      "Cumulative sleep deficit",
+      "Elevated inflammatory biomarker response (CRP)",
+      "Reported isolation stress and mood rating decline"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Solar Particle Event Habitat Storm Shelter",
+        "protocol": "Immediately relocate crew to heavily shielded central storm shelter modules upon solar particle event alerts. Remain in sheltered configuration until active dosimeter telemetry measures baseline transit levels (<2.0 mSv/day).",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Autonomic Deconditioning and Fluid Rebalancing",
+        "protocol": "Ingest monitored fluid and electrolyte countermeasure solutions to counter microgravity-induced cephalad fluid shifts. Utilize lower body compression garments to support venous return and relieve cardiac strain.",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Cardiac Pacing and Workload Adjustment",
+        "protocol": "Reduce mission operational physical workload for crew exhibiting sustained elevated resting heart rate or suppressed HRV. Introduce dedicated restorative rest periods to allow autonomic stabilization.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This output provides risk flags and suggested countermeasures only; it does not constitute a medical diagnosis or treatment plan. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-storm-shelter",
+      "countermeasures.md#cardio-fluid-shift",
+      "countermeasures.md#cardio-workload-recovery"
+    ],
+    "mode": "cached"
+  },
+  "C002:145": {
+    "summary": "Red CRI trajectory with elevated radiation, cardiovascular strain, sleep deficit, inflammation, and isolation stress.",
+    "drivers": [
+      "Solar particle event acute radiation spike (9.0 mSv)",
+      "Cardiovascular strain: resting HR elevated (72 bpm) and HRV depressed (48 ms)",
+      "Sleep duration below 6h for consecutive sols (avg 5.4h)",
+      "Elevated inflammatory biomarker response (CRP)",
+      "Reported isolation stress and mood rating decline"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Solar Particle Event Habitat Storm Shelter",
+        "protocol": "Immediately relocate crew to heavily shielded central storm shelter modules upon solar particle event alerts. Remain in sheltered configuration until active dosimeter telemetry measures baseline transit levels (<2.0 mSv/day).",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Autonomic Deconditioning and Fluid Rebalancing",
+        "protocol": "Ingest monitored fluid and electrolyte countermeasure solutions to counter microgravity-induced cephalad fluid shifts. Utilize lower body compression garments to support venous return and relieve cardiac strain.",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Cardiac Pacing and Workload Adjustment",
+        "protocol": "Reduce mission operational physical workload for crew exhibiting sustained elevated resting heart rate or suppressed HRV. Introduce dedicated restorative rest periods to allow autonomic stabilization.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only; consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-storm-shelter",
+      "countermeasures.md#cardio-fluid-shift",
+      "countermeasures.md#cardio-workload-recovery"
+    ],
+    "mode": "cached"
+  },
+  "C003:140": {
+    "summary": "Elevated inflammatory biomarker response (CRP) identified for crew member C003",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This information is advisory only. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C003:141": {
+    "summary": "Crew member C003 shows elevated inflammatory biomarker (CRP) as a computed risk driver.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This information is for risk management purposes only and does not constitute a medical diagnosis or treatment recommendation. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C003:142": {
+    "summary": "Risk flag: Elevated inflammatory biomarker response (CRP) detected.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only; consult flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C003:143": {
+    "summary": "Elevated inflammatory biomarker response (CRP) identified as risk driver for Crew Member C003.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is for informational purposes only and does not replace professional medical evaluation. Consult flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C003:144": {
+    "summary": "Crew member C003 shows elevated inflammatory biomarker (CRP) as a computed risk driver.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is based on available data and does not replace professional medical judgment. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C003:145": {
+    "summary": "Elevated inflammatory biomarker (CRP) noted for crew member C003 on mission Sol 145.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This information is for risk management purposes only and does not constitute a medical diagnosis or treatment recommendation. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C004:140": {
+    "summary": "Elevated inflammatory biomarker response detected; potential health risk.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only and does not replace professional medical evaluation. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C004:141": {
+    "summary": "Crew member C004 shows elevated inflammatory biomarker (CRP) with a 48\u2011hour predicted risk window.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is for risk awareness only and does not constitute a medical diagnosis or treatment recommendation. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C004:142": {
+    "summary": "Crew member C004 shows elevated inflammatory biomarker (CRP) within the predicted risk window.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only and does not constitute medical diagnosis or prescription. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C004:143": {
+    "summary": "Elevated inflammatory biomarker response (CRP) identified for crew member C004 on mission Sol 143.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only and does not constitute medical diagnosis or prescription. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C004:144": {
+    "summary": "Elevated inflammatory biomarker response (CRP) identified for crew member C004.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only; consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  },
+  "C004:145": {
+    "summary": "Elevated inflammatory biomarker response detected; potential health risk.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only and does not replace professional medical evaluation. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  }
+}

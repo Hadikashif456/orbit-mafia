@@ -91,6 +91,28 @@ def health_check():
     return {"status": "ok"}
 
 
+# Dependency Health Check
+@app.get("/api/v1/health/deps", tags=["Health"])
+def health_deps_check():
+    """Reports dependency readiness (db, groq_key_present) without revealing secrets."""
+    db_available = False
+    try:
+        import os
+        import sqlite3
+        if os.path.exists(settings.DB_PATH):
+            conn = sqlite3.connect(f"file:{settings.DB_PATH}?mode=ro", uri=True)
+            conn.execute("SELECT 1")
+            conn.close()
+            db_available = True
+    except Exception:
+        db_available = False
+
+    return {
+        "db": db_available,
+        "groq_key_present": settings.groq_key_present,
+    }
+
+
 # Mount API v1 Routers
 app.include_router(crew_router, prefix="/api/v1")
 app.include_router(scenario_router, prefix="/api/v1")

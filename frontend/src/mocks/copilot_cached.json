@@ -1,26 +1,54 @@
 {
-  "summary": "Cmdr B (C002) experienced cumulative sleep restriction over Sols 141–143 compounded by an acute solar particle event (SPE) at Sol 143, precipitating autonomic strain and a projected CRI decrease below 65.",
-  "drivers": [
-    "Solar particle event radiation spike (9.0 mSv)",
-    "Sleep duration below 6 hours for 3 consecutive sols",
-    "Resting heart rate elevated by +10 bpm over baseline"
-  ],
-  "suggestedActions": [
-    {
-      "title": "Radiation Storm Shelter Protocol",
-      "protocol": "Remain in designated habitat storm shelter module until active dosimeter measures normal transit baseline (<2.0 mSv/day). Reschedule pending EVA spacewalk activities.",
-      "source": "NASA HRP: Space Radiation Bio-Protection Guidelines"
-    },
-    {
-      "title": "Circadian & Sleep Recovery Protocol",
-      "protocol": "Deliver 30 minutes of high-intensity blue-enriched light therapy upon waking. Enforce mandatory 8.5-hour quiet rest opportunity in private crew quarters.",
-      "source": "NASA HRP: Fatigue Management and Countermeasures"
-    }
-  ],
-  "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
-  "groundedIn": [
-    "countermeasures.md#radiation",
-    "countermeasures.md#sleep"
-  ],
-  "mode": "cached"
+  "C002:144": {
+    "summary": "Elevated acute radiation exposure, autonomic/cardiovascular strain, sleep deficit, inflammatory response, and isolation stress identified.",
+    "drivers": [
+      "Solar particle event acute radiation spike (9.0 mSv)",
+      "Cardiovascular strain: resting HR elevated (69 bpm) and HRV depressed (54 ms)",
+      "Cumulative sleep deficit",
+      "Elevated inflammatory biomarker response (CRP)",
+      "Reported isolation stress and mood rating decline"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Solar Particle Event Habitat Storm Shelter",
+        "protocol": "Immediately relocate crew to heavily shielded central storm shelter modules upon solar particle event alerts. Remain in sheltered configuration until active dosimeter telemetry measures baseline transit levels (<2.0 mSv/day).",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Autonomic Deconditioning and Fluid Rebalancing",
+        "protocol": "Ingest monitored fluid and electrolyte countermeasure solutions to counter microgravity-induced cephalad fluid shifts. Utilize lower body compression garments to support venous return and relieve cardiac strain.",
+        "source": "TODO: source"
+      },
+      {
+        "title": "Cardiac Pacing and Workload Adjustment",
+        "protocol": "Reduce mission operational physical workload for crew exhibiting sustained elevated resting heart rate or suppressed HRV. Introduce dedicated restorative rest periods to allow autonomic stabilization.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This output provides risk flags and suggested countermeasures only; it does not constitute a medical diagnosis or treatment plan. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-storm-shelter",
+      "countermeasures.md#cardio-fluid-shift",
+      "countermeasures.md#cardio-workload-recovery"
+    ],
+    "mode": "cached"
+  },
+  "C001:140": {
+    "summary": "Crew member C001 shows elevated inflammatory biomarker (CRP) on Sol 140.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone all pending extravehicular spacewalks during elevated space radiation conditions. Limit personnel proximity to thinly shielded outer habitat hulls until particle flux subsides.",
+        "source": "TODO: source"
+      }
+    ],
+    "disclaimer": "This guidance is based on available data and NASA countermeasure protocols. It does not constitute a medical diagnosis or prescription. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  }
 }
