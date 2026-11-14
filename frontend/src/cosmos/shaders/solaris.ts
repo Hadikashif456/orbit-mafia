@@ -20,7 +20,7 @@ const float D_PLANET = 1.45;
 const float D_SUN = 30.0;
 const float SUN_R = 0.044;
 
-vec2 planetC() { return vec2(clamp(0.5 * gAspect - 0.60, 0.0, 0.6), -0.10); }
+vec2 planetC() { return vec2(clamp(0.5 * gAspect - 0.50, 0.0, 0.7), -0.10); }
 float planetR() { return 0.36 * clamp(gAspect / 1.3, 0.6, 1.0); }
 // At rest the sun sits just past the upper-left limb: a partial eclipse.
 vec2 sunP() { return planetC() + normalize(vec2(-0.58, 0.81)) * planetR() * 1.045; }

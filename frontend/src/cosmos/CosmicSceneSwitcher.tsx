@@ -1,144 +1,79 @@
 import { useEffect } from 'react';
-import type { FC, PointerEvent as ReactPointerEvent, MouseEvent as ReactMouseEvent } from 'react';
-import { Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw } from 'lucide-react';
-import clsx from 'clsx';
-import { isEditableTarget } from './CameraController';
-import type { MoveDirection } from './CameraController';
+import type { FC } from 'react';
+import { useLocation } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 import { CosmicDreamscape } from './CosmicDreamscape';
+import { CrimsonSingularity } from './CrimsonSingularity';
 import { useCosmos } from './CosmosContext';
 import { ObsidianSolaris } from './ObsidianSolaris';
-import { SCENES, getScene } from './scenes';
-
-const PAD_BUTTON =
-  'pointer-events-auto flex h-11 w-11 touch-none items-center justify-center rounded-md border border-white/15 bg-black/45 text-slate-200 backdrop-blur-sm transition-colors hover:border-white/40 hover:text-white active:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70';
+import { SCENES } from './scenes';
 
 /**
- * Host for the two cosmic screens. It keeps the camera controls live while
- * either screen is open and provides the scene switch and on-screen pad.
+ * The cosmos page: three screens stacked into one scroll. Scrolling down
+ * turns Obsidian Solaris into Cosmic Dreamscape, then into Crimson
+ * Singularity; scrolling up walks back. This component reports the scroll
+ * position; CosmicBackdrop does the blending.
+ *
+ * There are no on-screen controls. The camera is driven by the mouse and
+ * keyboard (see CameraController.attach): drag up/down or Ctrl + wheel to
+ * move in and out, arrow keys to drift, double-click to reset.
  */
 export const CosmicSceneSwitcher: FC = () => {
-  const { scene, setImmersive, camera } = useCosmos();
-  const navigate = useNavigate();
-  const accent = getScene(scene).accent;
+  const { setScene, setImmersive, scrollProgress } = useCosmos();
+  const { pathname } = useLocation();
+  // A link such as /cosmos/crimson opens already scrolled to that screen.
+  const startIndex = Math.max(0, SCENES.findIndex((s) => pathname.includes(s.path)));
 
   useEffect(() => {
+    const measure = (): void => {
+      const range = document.documentElement.scrollHeight - window.innerHeight;
+      scrollProgress.current = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0;
+    };
+    if (startIndex > 0) {
+      const range = document.documentElement.scrollHeight - window.innerHeight;
+      window.scrollTo(0, (range * startIndex) / (SCENES.length - 1));
+    }
+    measure();
     setImmersive(true);
-    return () => setImmersive(false);
-  }, [setImmersive]);
-
-  // 1 and 2 jump between the screens.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent): void => {
-      if (e.altKey || e.ctrlKey || e.metaKey || isEditableTarget(e.target)) return;
-      const target = SCENES.find((s) => String(Number(s.index)) === e.key);
-      if (target) navigate(`/cosmos/${target.path}`);
+    window.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
+      // Other pages keep whichever scene was on screen as their dim backdrop.
+      setScene(SCENES[Math.round(scrollProgress.current * (SCENES.length - 1))].id);
+      setImmersive(false);
+      scrollProgress.current = 0;
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [navigate]);
-
-  const padButton = (direction: MoveDirection, label: string, icon: JSX.Element, position: string): JSX.Element => {
-    const press = (e: ReactPointerEvent<HTMLButtonElement>): void => {
-      e.currentTarget.setPointerCapture(e.pointerId);
-      camera.setHeld(direction, true);
-    };
-    const release = (): void => camera.setHeld(direction, false);
-    // detail === 0 means the click came from the keyboard, not a pointer.
-    const click = (e: ReactMouseEvent<HTMLButtonElement>): void => {
-      if (e.detail === 0) camera.nudge(direction);
-    };
-    return (
-      <button
-        type="button"
-        aria-label={label}
-        title={label}
-        className={clsx(PAD_BUTTON, position)}
-        onPointerDown={press}
-        onPointerUp={release}
-        onPointerCancel={release}
-        onLostPointerCapture={release}
-        onClick={click}
-      >
-        {icon}
-      </button>
-    );
-  };
+  }, [scrollProgress, setImmersive, setScene, startIndex]);
 
   return (
-    <section
-      aria-label="Cosmic screens"
-      className="relative min-h-[calc(100dvh-6rem)] overflow-hidden"
-      style={{ ['--cosmos-accent' as string]: accent }}
-    >
-      {/* Lower-third: a soft floor of shadow so the caption and controls stay readable. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/85 via-black/45 to-transparent"
-      />
-
-      <Routes>
-        <Route index element={<Navigate to="dreamscape" replace />} />
-        <Route path="dreamscape" element={<CosmicDreamscape />} />
-        <Route path="solaris" element={<ObsidianSolaris />} />
-        <Route path="*" element={<Navigate to="dreamscape" replace />} />
-      </Routes>
-
-      {/* Scene switch */}
-      <nav
-        aria-label="Switch cosmic screen"
-        className="absolute right-5 top-6 flex flex-col items-end gap-1.5 font-mono text-[11px] uppercase tracking-[0.22em] sm:right-8 sm:top-8"
-      >
-        {SCENES.map((s) => (
-          <NavLink
-            key={s.id}
-            to={`/cosmos/${s.path}`}
-            className={({ isActive }) =>
-              clsx(
-                'flex items-center gap-3 rounded-md border px-3 py-2 backdrop-blur-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70',
-                isActive
-                  ? 'border-[color:var(--cosmos-accent)] bg-black/55 text-white'
-                  : 'border-white/10 bg-black/30 text-slate-400 hover:border-white/30 hover:text-slate-100',
-              )
-            }
-          >
-            <span style={{ color: s.accent }}>{s.index}</span>
-            <span>{s.name}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Key hints */}
-      <p className="pointer-events-none absolute bottom-7 left-5 hidden font-mono text-[11px] uppercase leading-6 tracking-[0.2em] text-slate-400 sm:left-8 md:block">
-        <span className="text-slate-200">← →</span> drift
-        <span className="mx-3 text-slate-600">/</span>
-        <span className="text-slate-200">↑ ↓</span> travel
-        <span className="mx-3 text-slate-600">/</span>
-        <span className="text-slate-200">scroll</span> zoom
-        <span className="mx-3 text-slate-600">/</span>
-        <span className="text-slate-200">1 2</span> screen
-      </p>
-
-      {/* On-screen movement pad */}
-      <div
-        role="group"
-        aria-label="Camera movement"
-        className="pointer-events-none absolute bottom-6 right-5 grid grid-cols-3 grid-rows-2 gap-1.5 sm:right-8"
-      >
-        <button
-          type="button"
-          aria-label="Reset view"
-          title="Reset view"
-          className={clsx(PAD_BUTTON, 'col-start-1 row-start-1')}
-          onClick={() => camera.reset()}
+    <section aria-label="Cosmic screens" className="relative cursor-ns-resize select-none">
+      <div className="relative">
+        <ObsidianSolaris />
+        {/* Team name, set beside the planet on the opening screen. */}
+        <div
+          className="pointer-events-none absolute left-5 top-[16%] sm:left-[6%] sm:top-[34%]"
+          style={{ textShadow: '0 2px 28px rgba(0,0,0,0.9)' }}
         >
-          <RotateCcw className="h-4 w-4" aria-hidden="true" />
-        </button>
-        {padButton('forward', 'Move forward', <ArrowUp className="h-4 w-4" aria-hidden="true" />, 'col-start-2 row-start-1')}
-        {padButton('left', 'Move left', <ArrowLeft className="h-4 w-4" aria-hidden="true" />, 'col-start-1 row-start-2')}
-        {padButton('back', 'Move back', <ArrowDown className="h-4 w-4" aria-hidden="true" />, 'col-start-2 row-start-2')}
-        {padButton('right', 'Move right', <ArrowRight className="h-4 w-4" aria-hidden="true" />, 'col-start-3 row-start-2')}
+          <h1 className="text-5xl font-black uppercase leading-none tracking-tight text-white sm:text-6xl lg:text-7xl">
+            Orbit Mafia
+          </h1>
+          {/* Punch line: a quiet italic serif against the heavy name, with the
+              second half picked out in the scene's gold. */}
+          <p className="mt-4 max-w-[19rem] font-serif text-lg italic leading-snug text-slate-200 sm:mt-5 sm:max-w-[24rem] sm:text-xl lg:text-2xl">
+            In the Silence of Space,{' '}
+            <span className="whitespace-nowrap text-[#F4D6A3]">Every Heartbeat Matters.</span>
+          </p>
+        </div>
+        {/* Scroll cue: belongs to the first screen, so it leaves with it. */}
+        <p className="pointer-events-none absolute inset-x-0 bottom-5 flex flex-col items-center gap-1 font-mono text-[11px] uppercase tracking-[0.3em] text-slate-300">
+          Scroll
+          <ChevronDown className="cosmos-bob h-4 w-4" aria-hidden="true" />
+        </p>
       </div>
+      <CosmicDreamscape />
+      <CrimsonSingularity />
     </section>
   );
 };
