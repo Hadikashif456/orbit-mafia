@@ -1,7 +1,7 @@
 import { useEffect, type FC } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCosmos } from '../cosmos/CosmosContext';
-import { CRIMSON } from '../cosmos/scenes';
+import { CRIMSON, SCENES } from '../cosmos/scenes';
 import fakeData from '../data/fake_data.json';
 import { getAstronautSnapshot } from '../data/detailSource';
 
@@ -9,16 +9,24 @@ type AlertData = (typeof fakeData)[keyof typeof fakeData];
 
 export const AlertScreen: FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { scene, setScene } = useCosmos();
+  const { scene, immersive, scrollProgress, setScene, setImmersive } = useCosmos();
   const snapshot = id ? getAstronautSnapshot(id) : null;
   const data = id ? fakeData[`${id}:142` as keyof typeof fakeData] as AlertData | undefined : undefined;
   const band = snapshot?.band;
 
   useEffect(() => {
     const previousScene = scene;
+    const previousImmersive = immersive;
+    const previousProgress = scrollProgress.current;
     setScene(CRIMSON.id);
-    return () => setScene(previousScene);
-  }, [setScene]);
+    scrollProgress.current = SCENES.findIndex((item) => item.id === CRIMSON.id) / (SCENES.length - 1);
+    setImmersive(true);
+    return () => {
+      setScene(previousScene);
+      setImmersive(previousImmersive);
+      scrollProgress.current = previousProgress;
+    };
+  }, [scrollProgress, setImmersive, setScene]);
 
   if (!snapshot || !data || !band) {
     return <main className="alert-screen"><p>Alert data is unavailable for this crew member.</p></main>;

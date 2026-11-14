@@ -3,13 +3,21 @@ import { useCosmos } from '../cosmos/CosmosContext';
 import { EYE } from '../cosmos/scenes';
 
 export const DemoMode: FC = () => {
-  const { scene, setScene } = useCosmos();
+  const { scene, immersive, scrollProgress, setScene, setImmersive } = useCosmos();
 
   useEffect(() => {
     const previousScene = scene;
+    const previousImmersive = immersive;
+    const previousProgress = scrollProgress.current;
     setScene(EYE.id);
-    return () => setScene(previousScene);
-  }, [setScene]);
+    scrollProgress.current = 1;
+    setImmersive(true);
+    return () => {
+      setScene(previousScene);
+      setImmersive(previousImmersive);
+      scrollProgress.current = previousProgress;
+    };
+  }, [scrollProgress, setImmersive, setScene]);
 
   return (
     <div className="container mx-auto p-6">
