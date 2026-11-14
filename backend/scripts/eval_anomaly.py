@@ -126,7 +126,7 @@ def generate_synthetic_telemetry(seed: int = 42) -> Dict[str, List[VitalPoint]]:
 def run_evaluation() -> None:
     """Executes evaluation of anomaly detection and 48-hour risk forecasting."""
     print("=" * 80)
-    print("VITALORBIT ANOMALY & RISK FLAG EVALUATION (TRD Section 6)")
+    print("ORBIT MAFIA ANOMALY & RISK FLAG EVALUATION (TRD Section 6)")
     print("=" * 80)
     print("Dataset Provenance: SYNTHETIC (Generated per TRD Section 4)")
     print("Crew Profiles: C001 (Cmdr A), C002 (Cmdr B), C003 (Cmdr C), C004 (Cmdr D)")

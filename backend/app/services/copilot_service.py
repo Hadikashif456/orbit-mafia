@@ -21,7 +21,7 @@ from app.services.data_access import get_vitals_history, get_biomarkers
 from app.services.knowledge import top_k
 from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
 
-logger = logging.getLogger("vitalorbit.copilot")
+logger = logging.getLogger("orbitmafia.copilot")
 
 # Regex for pharmaceutical dosing (e.g. 100 mg, 50mcg, 5 ml, 10g)
 DOSE_REGEX = re.compile(r"\b\d+\s?(mg|mcg|ml|g)\b", re.IGNORECASE)
@@ -31,7 +31,7 @@ FORBIDDEN_PHRASES = ["diagnos", "you have", "you are suffering", "stop taking"]
 
 # System prompt skeleton adhering to TRD Section 8 & SECURITY Section 7
 SYSTEM_PROMPT = (
-    "You are the VitalOrbit crew health assistant for a prototype. You produce RISK FLAGS and SUGGESTED COUNTERMEASURES only.\n"
+    "You are the Orbit Mafia crew health assistant for a prototype. You produce RISK FLAGS and SUGGESTED COUNTERMEASURES only.\n"
     "Rules: never diagnose; never name medications or doses; never say \"you have <condition>\"; "
     "never say \"you are suffering\"; never say \"stop taking\"; use only the facts and protocols provided in CONTEXT; "
     "if CONTEXT lacks a protocol, say \"consult flight surgeon when contact is possible\".\n"

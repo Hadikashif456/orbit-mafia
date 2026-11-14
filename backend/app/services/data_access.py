@@ -1,5 +1,5 @@
 # Backend 1 replaces the bodies of these two functions with DB queries; signatures must not change.
-"""Data access layer for VitalOrbit AI services.
+"""Data access layer for Orbit Mafia AI services.
 
 Exposes vitals history and biomarker queries decoupled from HTTP routers.
 """
