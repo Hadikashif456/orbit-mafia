@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, NavLink, useLocation } from 'react-router-dom';
 import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
@@ -29,9 +29,15 @@ const Shell: FC = () => {
                   <span className="text-cyan-400">Vital</span>Orbit
                 </Link>
                 <nav className="flex items-center gap-4 text-sm font-medium">
-                  <Link to="/" className="text-slate-300 hover:text-white transition-colors">
+                  <NavLink
+                    to="/crew"
+                    end
+                    className={({ isActive }) =>
+                      `${isActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`
+                    }
+                  >
                     Crew Board
-                  </Link>
+                  </NavLink>
                   <Link to="/crew/C001" className="text-slate-300 hover:text-white transition-colors">
                     Astronaut Detail
                   </Link>
@@ -55,6 +61,7 @@ const Shell: FC = () => {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<CrewBoard />} />
+          <Route path="/crew" element={<CrewBoardPage />} />
           <Route path="/crew/:id" element={<AstronautDetail />} />
           <Route path="/demo" element={<DemoMode />} />
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
