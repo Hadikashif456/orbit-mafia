@@ -2,6 +2,11 @@
 @import './styles/tokens.css';
 @import './styles/crew.css';
 @import './styles/crew/crew-glass.css';
+@import './styles/detail/detail-chart.css';
+@import './styles/detail/detail-page.css';
+@import './styles/detail/detail-panels.css';
+@import './styles/detail/detail-status.css';
+@import './styles/detail/detail-tabs.css';
 
 @tailwind base;
 @tailwind components;
