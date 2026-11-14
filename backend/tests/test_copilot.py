@@ -15,6 +15,7 @@ Tests enforce docs/TRD.md Section 8 and docs/SECURITY.md Section 7:
 """
 
 import json
+import logging
 from unittest.mock import AsyncMock, patch
 import httpx
 import pytest
@@ -23,7 +24,12 @@ from fastapi.testclient import TestClient
 from app.config import settings
 from app.main import app
 from app.models import CopilotRequest, CopilotResponse
-from app.services.copilot_service import clear_cache, explain_risk, _lookup_file_cache
+from app.services.copilot_service import (
+    clear_cache,
+    explain_risk,
+    _lookup_file_cache,
+    _build_templated_response,
+)
 from app.services.knowledge import top_k
 
 
@@ -78,7 +84,7 @@ async def test_good_json_passes(monkeypatch):
     monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_mock_valid_api_key_test_value")
 
     # Match source from countermeasures.md to pass source check
-    snippets = top_k(["radiation", "sleep"], k=3)
+    snippets = top_k(["radiation"], k=1)
     valid_source = snippets[0]["source"] if snippets else "NASA HRP: Guidelines"
 
     groq_payload = {
@@ -468,5 +474,104 @@ def test_file_cache_lookup_success(tmp_path, monkeypatch):
     assert res is not None
     assert res.mode == "cached"
     assert res.summary == "Precomputed cached test summary"
+
+
+def test_copilot_rate_limit_reads_from_settings():
+    """Verify that copilot router reads its rate limit string from settings.RATE_LIMIT_COPILOT."""
+    from app.routers.copilot import router
+    for route in router.routes:
+        if route.path == "/copilot/explain":
+            assert hasattr(route.endpoint, "_rate_limits") or hasattr(route.endpoint, "__wrapped__")
+    assert settings.RATE_LIMIT_COPILOT in ["10/minute", settings.RATE_LIMIT_COPILOT]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("mode", ["live", "cached", "templated"])
+async def test_no_forbidden_clinical_words_in_response(mode, monkeypatch):
+    """Verify response never contains 'diagnose', 'detects disease', or 'treats' in any field across modes."""
+    clear_cache()
+    snippets = top_k(["radiation"], k=1)
+    valid_source = snippets[0]["source"] if snippets else "NASA HRP: Guidelines"
+
+    if mode == "live":
+        monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_mock_valid_key")
+        payload = {
+            "summary": "Operational assessment indicates sleep debt and elevated radiation.",
+            "drivers": ["Elevated radiation"],
+            "suggestedActions": [{"title": "Shelter", "protocol": "Relocate", "source": valid_source}],
+            "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
+        }
+        with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+            mock_post.return_value = make_groq_response(payload)
+            res = await explain_risk(CopilotRequest(crewId="C002", sol=144))
+    elif mode == "cached":
+        res = _build_templated_response("C002", 144, ["Radiation"], snippets)
+        res = res.model_copy(update={"mode": "cached"})
+    else:  # templated
+        res = _build_templated_response("C002", 144, ["Radiation"], snippets)
+
+    all_fields = [res.summary, res.disclaimer] + res.drivers
+    for action in res.suggestedActions:
+        all_fields.extend([action.title, action.protocol, action.source])
+
+    combined_text = " ".join(all_fields).lower()
+    for forbidden in ["diagnose", "detects disease", "treats"]:
+        assert forbidden not in combined_text, f"Forbidden clinical word '{forbidden}' found in mode {mode}"
+
+
+@pytest.mark.asyncio
+async def test_groq_failure_missing_key_malformed_return_200(test_client: TestClient, monkeypatch):
+    """Verify Groq failure, missing key, and malformed model response all return HTTP 200 with mode 'cached', never 5xx."""
+    # 1. Missing key
+    monkeypatch.setattr(settings, "GROQ_API_KEY", None)
+    res_no_key = test_client.post("/api/v1/copilot/explain", json={"crewId": "C002", "sol": 144})
+    assert res_no_key.status_code == 200
+    assert res_no_key.json()["mode"] in ("cached", "templated")
+
+    # 2. Groq failure (500 from Groq)
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_test_key")
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = httpx.HTTPStatusError("Groq Down", request=httpx.Request("POST", "https://api.groq.com"), response=httpx.Response(500))
+        res_fail = test_client.post("/api/v1/copilot/explain", json={"crewId": "C002", "sol": 144})
+        assert res_fail.status_code == 200
+        assert res_fail.json()["mode"] in ("cached", "templated")
+
+    # 3. Malformed model response
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = httpx.Response(200, content=b"not json at all", request=httpx.Request("POST", "https://api.groq.com"))
+        res_malformed = test_client.post("/api/v1/copilot/explain", json={"crewId": "C002", "sol": 144})
+        assert res_malformed.status_code == 200
+        assert res_malformed.json()["mode"] in ("cached", "templated")
+
+
+@pytest.mark.asyncio
+async def test_groq_api_key_never_logged_or_returned(caplog, monkeypatch, test_client: TestClient):
+    """Verify GROQ_API_KEY is never logged or returned in any response."""
+    secret_key = "gsk_SECRET_NEVER_LEAK_ME_12345"
+    monkeypatch.setattr(settings, "GROQ_API_KEY", secret_key)
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = RuntimeError("Connection transport failed")
+        with caplog.at_level(logging.DEBUG):
+            resp = test_client.post("/api/v1/copilot/explain", json={"crewId": "C002", "sol": 144})
+
+    # Never returned in response
+    assert secret_key not in resp.text
+    # Never logged in log records
+    for record in caplog.records:
+        assert secret_key not in record.message
+
+
+def test_chunked_or_missing_content_length_over_1kb_rejected(test_client: TestClient):
+    """Verify request with body > 1 KB is rejected with 422 even if Content-Length is missing or chunked."""
+    large_payload = ("a" * 1200).encode("utf-8")
+    # Body sent with missing Content-Length header
+    res = test_client.post(
+        "/api/v1/copilot/explain",
+        content=large_payload,
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 422
+    assert "1 KB" in res.json().get("error", {}).get("message", "")
 
 

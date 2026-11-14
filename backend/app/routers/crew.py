@@ -5,117 +5,24 @@ from fastapi import APIRouter, Path, Query, HTTPException, status
 from app.models import CrewSummary, VitalPoint, CRIResult, Biomarker
 from app.security.validators import validate_crew_id, validate_sol, validate_window
 from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
+from app.services.data_access import get_vitals_history, get_biomarkers
 
 router = APIRouter(prefix="/crew", tags=["Crew"])
 
 
 # ==============================================================================
 # Data Layer Integration Stubs
-# TODO: Replace with data teammate's DB query functions from app.db when ready.
+# Delegates to data_access service.
 # ==============================================================================
 
 def _get_vitals_history_stub(crew_id: str, sol: int) -> List[VitalPoint]:
-    """TODO (Data Teammate): Replace with DB query from app.db when ready:
-    SELECT * FROM vitals WHERE crew_id = ? AND sol <= ? ORDER BY sol ASC
-    """
-    sols_to_generate = sorted(set(list(range(1, 15)) + list(range(max(1, sol - 2), sol + 1))))
-    results: List[VitalPoint] = []
-    for s in sols_to_generate:
-        if crew_id == "C002" and s >= 143:
-            results.append(
-                VitalPoint(
-                    crewId=crew_id,
-                    sol=s,
-                    hr=72.0 + (s - 143) * 2.0,
-                    hrv=48.0 - (s - 143) * 3.0,
-                    sleepHours=5.4,
-                    radiationMsv=9.0 if s == 143 else 4.5,
-                    exerciseMin=35.0,
-                    mood=2,
-                    provenance="SYNTHETIC",
-                )
-            )
-        elif crew_id == "C002" and s in (141, 142):
-            results.append(
-                VitalPoint(
-                    crewId=crew_id,
-                    sol=s,
-                    hr=64.0,
-                    hrv=58.0,
-                    sleepHours=5.5,
-                    radiationMsv=1.85,
-                    exerciseMin=40.0,
-                    mood=3,
-                    provenance="SYNTHETIC",
-                )
-            )
-        else:
-            results.append(
-                VitalPoint(
-                    crewId=crew_id,
-                    sol=s,
-                    hr=62.0,
-                    hrv=65.0,
-                    sleepHours=7.3,
-                    radiationMsv=1.84,
-                    exerciseMin=45.0,
-                    mood=4,
-                    provenance="SYNTHETIC",
-                )
-            )
-    return results
+    """Delegates to data_access.get_vitals_history."""
+    return get_vitals_history(crew_id, sol)
 
 
 def _get_biomarkers_stub(crew_id: str) -> List[Biomarker]:
-    """TODO (Data Teammate): Replace with DB query from app.db when ready:
-    SELECT * FROM biomarkers WHERE crew_id = ? ORDER BY timepoint ASC
-    """
-    return [
-        Biomarker(
-            crewId=crew_id,
-            timepoint="L-92",
-            panel="CARDIO_EVE",
-            name="CRP",
-            value=4820000.0,
-            unit="pg/mL",
-            refMin=0.0,
-            refMax=3000000.0,
-            provenance="REAL_OSDR",
-        ),
-        Biomarker(
-            crewId=crew_id,
-            timepoint="L-44",
-            panel="CARDIO_EVE",
-            name="CRP",
-            value=4910000.0,
-            unit="pg/mL",
-            refMin=0.0,
-            refMax=3000000.0,
-            provenance="REAL_OSDR",
-        ),
-        Biomarker(
-            crewId=crew_id,
-            timepoint="L-3",
-            panel="CARDIO_EVE",
-            name="CRP",
-            value=5131700.0 if crew_id == "C002" else 4950000.0,
-            unit="pg/mL",
-            refMin=0.0,
-            refMax=3000000.0,
-            provenance="REAL_OSDR",
-        ),
-        Biomarker(
-            crewId=crew_id,
-            timepoint="R+1",
-            panel="CARDIO_EVE",
-            name="CRP",
-            value=5400000.0 if crew_id == "C002" else 5000000.0,
-            unit="pg/mL",
-            refMin=0.0,
-            refMax=3000000.0,
-            provenance="REAL_OSDR",
-        ),
-    ]
+    """Delegates to data_access.get_biomarkers."""
+    return get_biomarkers(crew_id)
 
 
 @router.get("", response_model=List[CrewSummary])

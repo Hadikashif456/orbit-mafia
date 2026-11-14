@@ -17,6 +17,7 @@ import httpx
 
 from app.config import settings
 from app.models import CopilotRequest, CopilotResponse, SuggestedAction, VitalPoint, Biomarker
+from app.services.data_access import get_vitals_history, get_biomarkers
 from app.services.knowledge import top_k
 from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
 
@@ -106,67 +107,12 @@ def is_safe_copilot_response(
     return True
 
 
-def _get_vitals_history_stub(crew_id: str, sol: int, window: int = 14) -> List[VitalPoint]:
-    """Retrieves or generates historical vitals for crew member."""
-    try:
-        from app.routers.crew import _get_vitals_history_stub as crew_vitals_stub
-        return crew_vitals_stub(crew_id, sol, window)
-    except Exception:
-        start_sol = max(1, sol - window + 1)
-        return [
-            VitalPoint(
-                crewId=crew_id,
-                sol=s,
-                hr=72.0 if (crew_id == "C002" and s >= 143) else 62.0,
-                hrv=48.0 if (crew_id == "C002" and s >= 143) else 65.0,
-                sleepHours=5.4 if (crew_id == "C002" and s >= 143) else 7.5,
-                radiationMsv=9.0 if (crew_id == "C002" and s == 143) else 1.84,
-                exerciseMin=35.0,
-                mood=2 if (crew_id == "C002" and s >= 143) else 4,
-                provenance="SYNTHETIC",
-            )
-            for s in range(start_sol, sol + 1)
-        ]
-
-
-def _get_biomarkers_stub(crew_id: str) -> List[Biomarker]:
-    """Retrieves real NASA OSDR biomarkers for crew member."""
-    try:
-        from app.routers.crew import _get_biomarkers_stub as crew_biomarkers_stub
-        return crew_biomarkers_stub(crew_id)
-    except Exception:
-        return [
-            Biomarker(
-                crewId=crew_id,
-                timepoint="L-92",
-                panel="CARDIO_EVE",
-                name="CRP",
-                value=4820000.0,
-                unit="pg/mL",
-                refMin=0.0,
-                refMax=3000000.0,
-                provenance="REAL_OSDR",
-            ),
-            Biomarker(
-                crewId=crew_id,
-                timepoint="L-3",
-                panel="CARDIO_EVE",
-                name="CRP",
-                value=5131700.0 if crew_id == "C002" else 4950000.0,
-                unit="pg/mL",
-                refMin=0.0,
-                refMax=3000000.0,
-                provenance="REAL_OSDR",
-            ),
-        ]
-
-
 def _compute_server_side_metrics(crew_id: str, sol: int) -> Tuple[float, float, str, List[str], int]:
     """Computes CRI trajectory, status, drivers, and predicted risk window from data rows."""
-    vitals_history = _get_vitals_history_stub(crew_id, sol, window=14)
+    vitals_history = get_vitals_history(crew_id, sol, window=14)
     baseline = get_baseline(vitals_history)
     vitals_window = [v for v in vitals_history if sol - 2 <= v.sol <= sol]
-    biomarkers = _get_biomarkers_stub(crew_id)
+    biomarkers = get_biomarkers(crew_id)
     inflammation = compute_inflammation_score(biomarkers)
 
     current_cri_res = compute_cri(

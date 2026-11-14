@@ -39,16 +39,16 @@ def get_cri_status(cri: float) -> str:
 
 # Radiation Stress Parameters (mSv/day)
 RADIATION_BASELINE: float = 1.84
-RADIATION_WINDOW_MAX: float = 6.0
+RADIATION_WINDOW_MAX: float = 12.0
 RADIATION_SPIKE_MAX: float = 9.0
-RADIATION_SPIKE_FACTOR: float = 0.8
+RADIATION_SPIKE_FACTOR: float = 0.5
 
 # Sleep Stress Parameters (hours)
 SLEEP_BASELINE_HOURS: float = 7.5
-SLEEP_RANGE_DIVISOR: float = 3.5
+SLEEP_RANGE_DIVISOR: float = 4.5
 
 # Cardiovascular / Autonomic Parameters
-CARDIO_Z_SCALE: float = 3.0
+CARDIO_Z_SCALE: float = 6.0
 CARDIO_HR_WEIGHT: float = 0.5
 CARDIO_HRV_WEIGHT: float = 0.5
 
@@ -57,7 +57,7 @@ MOOD_BASELINE: float = 4.0
 MOOD_RANGE_DIVISOR: float = 3.0
 
 # Biomarker Inflammation Parameters
-INFLAMMATION_Z_SCALE: float = 3.0
+INFLAMMATION_Z_SCALE: float = 10.0
 PRE_FLIGHT_TIMEPOINTS: Tuple[str, ...] = ("L-92", "L-44", "L-3")
 DEFAULT_INFLAMMATION_MARKERS: Tuple[str, ...] = ("CRP", "FIBRINOGEN", "IL-6")
 

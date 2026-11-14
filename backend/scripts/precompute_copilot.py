@@ -244,8 +244,10 @@ async def main() -> None:
                 resp = await fetch_live_copilot(crew_id, sol, client)
 
                 if resp is None:
-                    logger.warning("SKIPPED: Entry %s failed validation or Groq call. Skipping entry.", key)
-                    continue
+                    logger.warning("Live Groq call failed or rejected for %s; using deterministic templated fallback.", key)
+                    cri_from, cri_to, cri_status, drivers, window_hours = _compute_server_side_metrics(crew_id, sol)
+                    snippets = top_k(drivers, k=3)
+                    resp = _build_templated_response(crew_id, sol, drivers, snippets)
 
                 entry_dict = resp.model_dump()
                 entry_dict["mode"] = "cached"

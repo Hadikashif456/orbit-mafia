@@ -106,10 +106,10 @@ def test_cri_all_one_stress_gives_zero(standard_baseline):
         VitalPoint(
             crewId="C002",
             sol=s,
-            hr=80.0,  # z_hr >= 3.0
-            hrv=40.0,  # -z_hrv >= 3.0
-            sleepHours=3.5,  # (7.5 - 3.5)/3.5 = 1.0
-            radiationMsv=9.0,  # max spike -> R = 1.0
+            hr=80.0,  # z_hr >= 6.0
+            hrv=29.0,  # -z_hrv >= 6.0
+            sleepHours=3.0,  # (7.5 - 3.0)/4.5 = 1.0
+            radiationMsv=12.0,  # max window -> R = 1.0
             exerciseMin=10.0,
             mood=1,  # (4.0 - 1.0)/3.0 = 1.0
             provenance="SYNTHETIC",
@@ -142,9 +142,9 @@ def test_status_boundaries(standard_baseline):
 
     # End-to-end engine verification via compute_cri:
     # 1. CRI == 75.0 -> green (FR-1.2: green >= 75)
-    # Deduction 25.0: S=1.0 (sleep=4.0 -> deduction 100*0.25*1.0 = 25.0)
+    # Deduction 25.0: S=1.0 (sleep=3.0 -> deduction 100*0.25*1.0 = 25.0)
     w_75 = [
-        VitalPoint(crewId="C001", sol=s, hr=62.0, hrv=65.0, sleepHours=4.0, radiationMsv=1.84, exerciseMin=45.0, mood=4, provenance="SYNTHETIC")
+        VitalPoint(crewId="C001", sol=s, hr=62.0, hrv=65.0, sleepHours=3.0, radiationMsv=1.84, exerciseMin=45.0, mood=4, provenance="SYNTHETIC")
         for s in (1, 2, 3)
     ]
     res_75 = compute_cri(w_75, standard_baseline, inflammation_score=0.0)
@@ -158,9 +158,9 @@ def test_status_boundaries(standard_baseline):
     assert res_74.status == "amber"
 
     # 3. CRI == 50.0 -> amber (FR-1.2: amber 50-74)
-    # Deduction 50.0: S=1.0 (25.0) + C=1.0 (25.0: hr=71.0 (+3*std), hrv=47.0 (-3*std))
+    # Deduction 50.0: S=1.0 (25.0) + C=1.0 (25.0: hr=80.0 (+6*std), hrv=29.0 (-6*std))
     w_50 = [
-        VitalPoint(crewId="C001", sol=s, hr=71.0, hrv=47.0, sleepHours=4.0, radiationMsv=1.84, exerciseMin=45.0, mood=4, provenance="SYNTHETIC")
+        VitalPoint(crewId="C001", sol=s, hr=80.0, hrv=29.0, sleepHours=3.0, radiationMsv=1.84, exerciseMin=45.0, mood=4, provenance="SYNTHETIC")
         for s in (1, 2, 3)
     ]
     res_50 = compute_cri(w_50, standard_baseline, inflammation_score=0.0)
@@ -280,4 +280,88 @@ def test_api_get_crew_cri_validation():
     # Invalid sol (< 1)
     resp_zero_sol = client.get("/api/v1/crew/C001/cri?sol=0")
     assert resp_zero_sol.status_code == 422
+
+
+def test_c002_sol_144_is_amber():
+    """Verify C002 Sol 144 CRI is in amber range (55-70) on both eval generator and data_access."""
+    from scripts.eval_anomaly import generate_synthetic_telemetry
+    from app.services.data_access import get_vitals_history, get_biomarkers
+
+    # 1. On eval generator scenario
+    telemetry = generate_synthetic_telemetry()
+    c002_eval = telemetry["C002"]
+    b_eval = get_baseline(c002_eval)
+    w_eval = [v for v in c002_eval if 142 <= v.sol <= 144]
+    bio_eval = get_biomarkers("C002")
+    inf_eval = compute_inflammation_score(bio_eval)
+    res_eval = compute_cri(w_eval, b_eval, inf_eval, "C002", 144)
+    assert 55.0 <= res_eval.cri <= 70.0, f"Expected 55-70 on eval generator, got {res_eval.cri}"
+    assert res_eval.status == "amber"
+
+    # 2. On data_access vitals history
+    vitals_history = get_vitals_history("C002", 144)
+    b_hist = get_baseline(vitals_history)
+    w_hist = [v for v in vitals_history if 142 <= v.sol <= 144]
+    res_hist = compute_cri(w_hist, b_hist, inf_eval, "C002", 144)
+    assert 55.0 <= res_hist.cri <= 70.0, f"Expected 55-70 on data_access, got {res_hist.cri}"
+    assert res_hist.status == "amber"
+
+
+def test_healthy_baseline_stays_green():
+    """Verify healthy crew members stay green (CRI >= 75.0) across all sols."""
+    from scripts.eval_anomaly import generate_synthetic_telemetry
+
+    telemetry = generate_synthetic_telemetry()
+    for cid in ["C001", "C003", "C004"]:
+        vitals = telemetry[cid]
+        b = get_baseline(vitals)
+        for s in range(1, 146):
+            w = [x for x in vitals if s - 2 <= x.sol <= s]
+            res = compute_cri(w, b, inflammation_score=0.0, crew_id=cid, sol=s)
+            assert res.cri >= 75.0, f"{cid} on Sol {s} dropped below 75 (got {res.cri})"
+            assert res.status == "green"
+
+
+def test_monotonicity_of_stress_terms(standard_baseline):
+    """Verify that each stress term is monotonic in its respective inputs."""
+    # Radiation: higher dose -> higher stress
+    r_low = stress_radiation([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=8, radiationMsv=2.0, exerciseMin=30, mood=4, provenance="SYNTHETIC")])
+    r_mid = stress_radiation([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=8, radiationMsv=5.0, exerciseMin=30, mood=4, provenance="SYNTHETIC")])
+    r_high = stress_radiation([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=8, radiationMsv=9.0, exerciseMin=30, mood=4, provenance="SYNTHETIC")])
+    assert r_low < r_mid < r_high
+
+    # Sleep: less sleep -> higher stress
+    s_low = stress_sleep([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=7.5, radiationMsv=1.84, exerciseMin=30, mood=4, provenance="SYNTHETIC")])
+    s_mid = stress_sleep([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=5.5, radiationMsv=1.84, exerciseMin=30, mood=4, provenance="SYNTHETIC")])
+    s_high = stress_sleep([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=3.5, radiationMsv=1.84, exerciseMin=30, mood=4, provenance="SYNTHETIC")])
+    assert s_low < s_mid < s_high
+
+    # Cardio: higher HR and lower HRV -> higher stress
+    c_low = stress_cardio([VitalPoint(crewId="C001", sol=1, hr=62, hrv=65, sleepHours=8, radiationMsv=1.84, exerciseMin=30, mood=4, provenance="SYNTHETIC")], standard_baseline)
+    c_mid = stress_cardio([VitalPoint(crewId="C001", sol=1, hr=70, hrv=55, sleepHours=8, radiationMsv=1.84, exerciseMin=30, mood=4, provenance="SYNTHETIC")], standard_baseline)
+    c_high = stress_cardio([VitalPoint(crewId="C001", sol=1, hr=80, hrv=40, sleepHours=8, radiationMsv=1.84, exerciseMin=30, mood=4, provenance="SYNTHETIC")], standard_baseline)
+    assert c_low < c_mid < c_high
+
+    # Mood: lower mood -> higher stress
+    m_low = stress_mood([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=8, radiationMsv=1.84, exerciseMin=30, mood=4, provenance="SYNTHETIC")])
+    m_mid = stress_mood([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=8, radiationMsv=1.84, exerciseMin=30, mood=3, provenance="SYNTHETIC")])
+    m_high = stress_mood([VitalPoint(crewId="C001", sol=1, hr=60, hrv=60, sleepHours=8, radiationMsv=1.84, exerciseMin=30, mood=1, provenance="SYNTHETIC")])
+    assert m_low < m_mid < m_high
+
+
+def test_cri_bounded_zero_to_hundred(standard_baseline):
+    """Verify CRI output is strictly clamped in [0, 100] across extreme vitals inputs."""
+    extreme_doses = [-10.0, 0.0, 1.84, 9.0, 50.0, 100.0]
+    extreme_sleeps = [-5.0, 0.0, 3.0, 7.5, 12.0, 24.0]
+    extreme_hrs = [20.0, 60.0, 100.0, 220.0]
+
+    for dose in extreme_doses:
+        for sleep in extreme_sleeps:
+            for hr in extreme_hrs:
+                window = [
+                    VitalPoint(crewId="C001", sol=1, hr=hr, hrv=50.0, sleepHours=sleep, radiationMsv=dose, exerciseMin=0.0, mood=1, provenance="SYNTHETIC")
+                ]
+                res = compute_cri(window, standard_baseline, inflammation_score=2.0)
+                assert 0.0 <= res.cri <= 100.0
+
 

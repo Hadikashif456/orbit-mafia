@@ -87,9 +87,9 @@ def get_baseline(vitals_rows: Sequence[VitalPoint]) -> Baseline:
         hr_std = 3.0
         hrv_std = 6.0
 
-    # Prevent zero-division
-    hr_std = max(hr_std, 1e-4)
-    hrv_std = max(hrv_std, 1e-4)
+    # Prevent zero-division and clamp to physiological variability floors
+    hr_std = max(hr_std, 2.5)
+    hrv_std = max(hrv_std, 4.0)
 
     return Baseline(
         hr_mean=round(hr_mean, 2),
@@ -103,8 +103,8 @@ def stress_radiation(vitals_window: Sequence[VitalPoint]) -> float:
     """Calculates radiation stress score R in [0, 1] per TRD Section 5 table.
     
     Formula:
-        R_mean = clip((dose_3sol_mean - 1.84) / (6.0 - 1.84), 0, 1)
-        R_spike = clip((dose_today - 1.84) / (9.0 - 1.84), 0, 1) * 0.8
+        R_mean = clip((dose_3sol_mean - 1.84) / (12.0 - 1.84), 0, 1)
+        R_spike = clip((dose_today - 1.84) / (9.0 - 1.84), 0, 1) * 0.5
         R = clip(max(R_mean, R_spike), 0, 1)
     """
     if not vitals_window:

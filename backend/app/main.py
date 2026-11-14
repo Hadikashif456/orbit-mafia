@@ -29,12 +29,23 @@ app.state.limiter = limiter
 # 1. Request size limit middleware (<= 1 KB per request body)
 @app.middleware("http")
 async def limit_request_size_middleware(request: Request, call_next):
-    content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > 1024:
-        return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"error": {"code": "VALIDATION_ERROR", "message": "Request body exceeds maximum size (1 KB)."}},
-        )
+    if request.method in ("POST", "PUT", "PATCH"):
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > 1024:
+                    return JSONResponse(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        content={"error": {"code": "VALIDATION_ERROR", "message": "Request body exceeds maximum size (1 KB)."}},
+                    )
+            except ValueError:
+                pass
+        body = await request.body()
+        if len(body) > 1024:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={"error": {"code": "VALIDATION_ERROR", "message": "Request body exceeds maximum size (1 KB)."}},
+            )
     return await call_next(request)
 
 # 2. CORS allowlist middleware

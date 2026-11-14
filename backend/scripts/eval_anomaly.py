@@ -25,6 +25,7 @@ from app.services.anomaly import (
     zscore_flags,
     risk_flag,
     compute_rolling_baseline,
+    reset_risk_flag_latch,
 )
 from app.services.cri_engine import compute_cri, get_baseline
 from app.services.cri_constants import STATUS_GREEN_MIN, STATUS_AMBER_MIN
@@ -159,6 +160,7 @@ def run_evaluation() -> None:
     risk_outputs: Dict[str, Dict[int, Dict[str, Any]]] = {cid: {} for cid in telemetry}
 
     for cid, vitals_list in telemetry.items():
+        reset_risk_flag_latch(cid)
         vitals_by_sol = {v.sol: v for v in vitals_list}
 
         for s in range(101, 146):
@@ -174,7 +176,7 @@ def run_evaluation() -> None:
             recent_cri = [cri_trajectories[cid][cs] for cs in (s - 2, s - 1, s) if cs in cri_trajectories[cid]]
 
             # Risk flag evaluation
-            r_flag = risk_flag(recent_cri, z_flags)
+            r_flag = risk_flag(recent_cri, z_flags, crew_id=cid)
             flags_fired[cid][s] = r_flag["flag"]
             risk_outputs[cid][s] = r_flag
 

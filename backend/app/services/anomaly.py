@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional, Sequence, Union, Tuple
 import math
 
 from app.models import VitalPoint
+from app.services.cri_constants import STATUS_GREEN_MIN
 
 FEATURES = ["hr", "hrv", "sleep", "radiation", "exercise", "mood"]
 
@@ -196,17 +197,38 @@ def score(model: Any, vitals_row: VitalPoint) -> float:
     return float((2.5 - max_z) / 10.0)
 
 
+_crew_latch_state: Dict[str, bool] = {}
+_crew_green_streak: Dict[str, int] = {}
+_crew_last_drivers: Dict[str, List[str]] = {}
+
+
+def reset_risk_flag_latch(crew_id: Optional[str] = None) -> None:
+    """Resets the risk flag latch state for tests and evaluations."""
+    global _crew_latch_state, _crew_green_streak, _crew_last_drivers
+    if crew_id is not None:
+        _crew_latch_state.pop(crew_id, None)
+        _crew_green_streak.pop(crew_id, None)
+        _crew_last_drivers.pop(crew_id, None)
+    else:
+        _crew_latch_state.clear()
+        _crew_green_streak.clear()
+        _crew_last_drivers.clear()
+
+
 def risk_flag(
     cri_history: Sequence[Any],
     anomaly_flags: Any,
     contributions: Optional[Dict[str, float]] = None,
     method: Optional[str] = None,
+    crew_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Computes 48-hour risk flag using CRI linear extrapolation and anomaly flags.
 
     TRD Section 6 rule:
         - Linear extrapolation of the last 3 CRI values to sol+2.
         - Raise 'risk in ~48h' flag if predicted CRI < 60 OR anomaly on >= 2 metrics in the same sol.
+        - Stability rule: once raised for a crew member, the flag stays raised until CRI is
+          at or above the green threshold (>= 75.0) for 2 consecutive sols.
         - Returns {flag, predictedWindowHours: 48, drivers, method}.
 
     Args:
@@ -214,6 +236,7 @@ def risk_flag(
         anomaly_flags: Dict of metric -> bool (from zscore_flags) or list/set of flagged metrics.
         contributions: Optional CRI contributions breakdown dict.
         method: Optional method string descriptor.
+        crew_id: Optional crew identifier for per-astronaut latch tracking.
 
     Returns:
         Dict with keys: flag, predictedWindowHours, drivers, method.
@@ -225,6 +248,12 @@ def risk_flag(
             cri_vals.append(float(c.cri))
         elif isinstance(c, (int, float)):
             cri_vals.append(float(c))
+
+    # Determine crew id from argument or cri_history
+    cid = crew_id
+    if cid is None and cri_history:
+        first = cri_history[-1]
+        cid = getattr(first, "crewId", None) or getattr(first, "crew_id", None)
 
     # 2. Linear extrapolation to sol+2
     if len(cri_vals) >= 3:
@@ -251,9 +280,41 @@ def risk_flag(
 
     cri_condition = bool(predicted_cri < 60.0)
     metric_condition = bool(len(anomalous_metrics) >= 2)
-    flag = bool(cri_condition or metric_condition)
+    raw_flag = bool(cri_condition or metric_condition)
 
-    # 4. Determine drivers
+    # 4. Latch State: Once raised for a crew member, stays raised until CRI >= 75.0 for 2 consecutive sols
+    current_cri = cri_vals[-1] if cri_vals else 100.0
+    if cid is not None:
+        is_latched = _crew_latch_state.get(cid, False)
+        green_streak = _crew_green_streak.get(cid, 0)
+
+        if raw_flag:
+            is_latched = True
+            green_streak = 0
+            final_flag = True
+        elif is_latched:
+            if current_cri >= STATUS_GREEN_MIN:
+                green_streak += 1
+                if green_streak >= 2:
+                    is_latched = False
+                    green_streak = 0
+                    final_flag = False
+                else:
+                    final_flag = True
+            else:
+                green_streak = 0
+                final_flag = True
+        else:
+            final_flag = False
+            green_streak = 0
+
+        _crew_latch_state[cid] = is_latched
+        _crew_green_streak[cid] = green_streak
+    else:
+        final_flag = raw_flag
+        is_latched = False
+
+    # 5. Determine drivers
     drivers: List[str] = []
     if contributions:
         # Top 2-3 contributions by points subtracted
@@ -267,17 +328,23 @@ def risk_flag(
     if not drivers and anomalous_metrics:
         drivers = [DRIVER_MAP.get(m.lower(), m) for m in anomalous_metrics][:3]
 
-    if flag and not drivers:
+    if not drivers and is_latched:
+        drivers = list(_crew_last_drivers.get(cid, []))
+
+    if final_flag and not drivers:
         if cri_condition:
             drivers.append("Projected CRI decline (<60)")
         if metric_condition:
             drivers.append("Multiple biometric anomalies")
 
-    # 5. Method label
+    if drivers:
+        _crew_last_drivers[cid] = drivers
+
+    # 6. Method label
     effective_method = method or ("isolation_forest+zscore+extrapolation")
 
     return {
-        "flag": flag,
+        "flag": final_flag,
         "predictedWindowHours": 48,
         "drivers": drivers,
         "method": effective_method,
@@ -298,10 +365,10 @@ def detect_anomalies(
     """
     # Backward-compatibility check: if first arg is a crew_id string
     if isinstance(vitals_history, str):
-        from app.routers.crew import _get_vitals_history_stub
+        from app.services.data_access import get_vitals_history
         crew_id = vitals_history
         target_sol = sol if sol is not None else 144
-        vitals_rows = _get_vitals_history_stub(crew_id, target_sol)
+        vitals_rows = get_vitals_history(crew_id, target_sol)
     else:
         vitals_rows = vitals_history
 
@@ -336,7 +403,7 @@ def detect_anomalies(
 
     # 4. Risk flag
     history_cri = cri_history if cri_history is not None else []
-    risk = risk_flag(history_cri, z_flags, method=method)
+    risk = risk_flag(history_cri, z_flags, method=method, crew_id=getattr(current_point, "crewId", None))
 
     risk["zscore_flags"] = z_flags
     risk["isolation_score"] = round(iso_score, 4)

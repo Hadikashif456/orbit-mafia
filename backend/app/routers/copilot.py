@@ -1,6 +1,7 @@
 """AI Copilot router providing risk explanation and suggested NASA countermeasures."""
 
 from fastapi import APIRouter, Request, Response
+from app.config import settings
 from app.models import CopilotRequest, CopilotResponse
 from app.security.rate_limit import limiter
 from app.services.copilot_service import explain_risk
@@ -9,7 +10,7 @@ router = APIRouter(prefix="/copilot", tags=["Copilot"])
 
 
 @router.post("/explain", response_model=CopilotResponse)
-@limiter.limit("10/minute; 100/day")
+@limiter.limit(f"{settings.RATE_LIMIT_COPILOT}; 100/day")
 async def explain_risk_endpoint(
     request: Request,
     payload: CopilotRequest,

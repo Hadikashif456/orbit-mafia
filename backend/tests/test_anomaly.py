@@ -14,6 +14,7 @@ from app.services.anomaly import (
     score,
     risk_flag,
     detect_anomalies,
+    reset_risk_flag_latch,
 )
 
 
@@ -256,3 +257,44 @@ def test_fallback_when_isolation_forest_fails(healthy_vitals_series, c002_stress
         )
         assert res["flag"] is True
         assert "fallback" in res["method"] or "zscore" in res["method"]
+
+
+def test_risk_flag_stability_no_flicker():
+    """Verify flicker prevention across Sol 141-143: once raised, flag stays raised until 2 consecutive green sols."""
+    reset_risk_flag_latch("C002")
+
+    # Sol 141: 2 metric anomalies trigger flag
+    r141 = risk_flag([98.8, 98.8, 92.6], {"sleep": True, "mood": True}, crew_id="C002")
+    assert r141["flag"] is True
+
+    # Sol 142: Only 1 metric anomaly, CRI=85.0 (green). Without latching, this would flicker to False.
+    r142 = risk_flag([98.8, 92.6, 85.0], {"sleep": True}, crew_id="C002")
+    assert r142["flag"] is True, "Flag should remain latched on Sol 142 (no flicker)"
+
+    # Sol 143: Acute spike (amber CRI=58.8), flag stays raised
+    r143 = risk_flag([92.6, 85.0, 58.8], {"hr": True, "hrv": True, "radiation": True}, crew_id="C002")
+    assert r143["flag"] is True
+
+    # Recovery Sol 1: CRI back to green (80.0), streak = 1 -> flag still latched
+    r_rec1 = risk_flag([85.0, 58.8, 80.0], {}, crew_id="C002")
+    assert r_rec1["flag"] is True, "Flag should still be latched after only 1 green sol"
+
+    # Recovery Sol 2: 2nd consecutive green sol (82.0), streak = 2 -> latch clears!
+    r_rec2 = risk_flag([58.8, 80.0, 82.0], {}, crew_id="C002")
+    assert r_rec2["flag"] is False, "Flag should unlatch after 2 consecutive green sols"
+
+
+def test_risk_flag_healthy_crew_never_raises():
+    """Verify that a healthy crew member with nominal vitals never raises the risk flag."""
+    reset_risk_flag_latch("C001")
+
+    # 10 sols of healthy vitals (CRI 90-95, <= 1 sporadic anomaly)
+    healthy_cri_sequence = [95.0, 94.5, 95.2, 94.8, 95.0, 93.9, 94.2, 95.1, 94.7, 95.0]
+    for idx in range(2, len(healthy_cri_sequence)):
+        window = healthy_cri_sequence[idx - 2 : idx + 1]
+        # At most 1 sporadic single anomaly
+        anomalies = {"hr": True} if idx == 5 else {}
+        res = risk_flag(window, anomalies, crew_id="C001")
+        assert res["flag"] is False, f"Healthy crew member raised flag on step {idx}"
+        assert res["predictedWindowHours"] == 48
+
