@@ -24,7 +24,10 @@ class Settings(BaseSettings):
     GROQ_TIMEOUT_SECONDS: int = 8
     DB_PATH: str = "./orbit_mafia.db"
     RATE_LIMIT_DEFAULT: str = "60/minute"
-    RATE_LIMIT_COPILOT: str = "10/minute"
+    RATE_LIMIT_COPILOT: str = "60/minute"
+    RATE_LIMIT_COPILOT_DAILY: str = "1000/day"
+    GROQ_MAX_CONCURRENT: int = 3
+    GROQ_LIVE_MAX_PER_HOUR: int = 60
 
     @property
     def allowed_origins_list(self) -> List[str]:

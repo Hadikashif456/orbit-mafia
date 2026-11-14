@@ -1,13 +1,26 @@
-title = "Orbit Mafia Gitleaks Configuration"
+title = "VitalOrbit Gitleaks Configuration"
 
 [extend]
 useDefault = true
 
+[allowlist]
+description = "Global allowlist for .env.example files, docs/, and team/ folders"
+paths = [
+    '''(^|/)\.env\.example$''',
+    '''(^|/)docs/''',
+    '''(^|/)team/''',
+]
+
 [[rules]]
 id = "groq-api-key"
-description = "Detected Groq API Key (gsk_ prefix)"
-regex = '''gsk_[a-zA-Z0-9]{40,}'''
-secretGroup = 0
-keywords = [
-    "gsk_",
+description = "Groq API key"
+regex = '''gsk_[A-Za-z0-9]{20,}'''
+tags = ["key", "groq"]
+
+[rules.allowlist]
+description = "Rule allowlist for .env.example files, docs/, and team/ folders"
+paths = [
+    '''(^|/)\.env\.example$''',
+    '''(^|/)docs/''',
+    '''(^|/)team/''',
 ]

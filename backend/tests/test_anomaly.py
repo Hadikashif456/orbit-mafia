@@ -1,6 +1,7 @@
 """Unit tests for Anomaly Detection and 48-Hour Risk Flag Engine (TRD Section 6)."""
 
 from unittest.mock import patch
+import logging
 import numpy as np
 import pytest
 
@@ -12,6 +13,7 @@ from app.services.anomaly import (
     zscore_flags,
     train,
     score,
+    ScoreResult,
     risk_flag,
     detect_anomalies,
     reset_risk_flag_latch,
@@ -162,13 +164,15 @@ def test_isolation_forest_train_and_score(healthy_vitals_series, c002_stressed_w
         mood=4,
         provenance="SYNTHETIC",
     )
-    healthy_score = score(model, healthy_pt)
-    stressed_score = score(model, c002_stressed_window[1])  # Sol 143 acute spike
+    healthy_score, healthy_method = score(model, healthy_pt)
+    stressed_score, stressed_method = score(model, c002_stressed_window[1])  # Sol 143 acute spike
 
     # Lower score = more anomalous
     assert stressed_score < healthy_score
     assert healthy_score > 0.0
     assert stressed_score < 0.0
+    assert healthy_method == "isolation_forest"
+    assert stressed_method == "isolation_forest"
 
 
 def test_risk_flag_healthy():
@@ -222,6 +226,7 @@ def test_detect_anomalies_healthy_vs_c002(healthy_vitals_series, c002_stressed_w
         model=model,
     )
     assert healthy_res["flag"] is False
+    assert healthy_res["method"] == "extrapolation+isolation_forest"
 
     # 2. Stressed C002 astronaut
     c002_vitals = healthy_vitals_series[:14] + c002_stressed_window
@@ -231,6 +236,7 @@ def test_detect_anomalies_healthy_vs_c002(healthy_vitals_series, c002_stressed_w
         model=model,
     )
     assert c002_res["flag"] is True
+    assert c002_res["method"] == "extrapolation+isolation_forest"
     assert len(c002_res["drivers"]) >= 1
 
 
@@ -242,11 +248,13 @@ def test_fallback_when_isolation_forest_fails(healthy_vitals_series, c002_stress
         assert isinstance(model, dict)
 
         # score should return fallback score without crashing
-        normal_sc = score(model, healthy_vitals_series[-1])
-        stressed_sc = score(model, c002_stressed_window[1])
+        normal_sc, method1 = score(model, healthy_vitals_series[-1])
+        stressed_sc, method2 = score(model, c002_stressed_window[1])
         assert isinstance(normal_sc, float)
         assert isinstance(stressed_sc, float)
         assert stressed_sc < normal_sc
+        assert method1 == "zscore_fallback"
+        assert method2 == "zscore_fallback"
 
         # detect_anomalies should run cleanly with fallback method
         c002_vitals = healthy_vitals_series[:14] + c002_stressed_window
@@ -256,32 +264,203 @@ def test_fallback_when_isolation_forest_fails(healthy_vitals_series, c002_stress
             model=model,
         )
         assert res["flag"] is True
-        assert "fallback" in res["method"] or "zscore" in res["method"]
+        assert res["method"] == "zscore_fallback"
 
 
 def test_risk_flag_stability_no_flicker():
     """Verify flicker prevention across Sol 141-143: once raised, flag stays raised until 2 consecutive green sols."""
     reset_risk_flag_latch("C002")
 
+    history = [
+        {"sol": 140, "cri": 98.8, "anomaly_flags": {}},
+        {"sol": 141, "cri": 92.6, "anomaly_flags": {"sleep": True, "mood": True}},
+        {"sol": 142, "cri": 85.0, "anomaly_flags": {"sleep": True}},
+        {"sol": 143, "cri": 58.8, "anomaly_flags": {"hr": True, "hrv": True, "radiation": True}},
+        {"sol": 144, "cri": 80.0, "anomaly_flags": {}},
+        {"sol": 145, "cri": 82.0, "anomaly_flags": {}},
+    ]
+
     # Sol 141: 2 metric anomalies trigger flag
-    r141 = risk_flag([98.8, 98.8, 92.6], {"sleep": True, "mood": True}, crew_id="C002")
+    r141 = risk_flag([98.8, 98.8, 92.6], {"sleep": True, "mood": True}, crew_id="C002", history=history, sol=141)
     assert r141["flag"] is True
 
     # Sol 142: Only 1 metric anomaly, CRI=85.0 (green). Without latching, this would flicker to False.
-    r142 = risk_flag([98.8, 92.6, 85.0], {"sleep": True}, crew_id="C002")
+    r142 = risk_flag([98.8, 92.6, 85.0], {"sleep": True}, crew_id="C002", history=history, sol=142)
     assert r142["flag"] is True, "Flag should remain latched on Sol 142 (no flicker)"
 
     # Sol 143: Acute spike (amber CRI=58.8), flag stays raised
-    r143 = risk_flag([92.6, 85.0, 58.8], {"hr": True, "hrv": True, "radiation": True}, crew_id="C002")
+    r143 = risk_flag([92.6, 85.0, 58.8], {"hr": True, "hrv": True, "radiation": True}, crew_id="C002", history=history, sol=143)
     assert r143["flag"] is True
 
     # Recovery Sol 1: CRI back to green (80.0), streak = 1 -> flag still latched
-    r_rec1 = risk_flag([85.0, 58.8, 80.0], {}, crew_id="C002")
+    r_rec1 = risk_flag([85.0, 58.8, 80.0], {}, crew_id="C002", history=history, sol=144)
     assert r_rec1["flag"] is True, "Flag should still be latched after only 1 green sol"
 
     # Recovery Sol 2: 2nd consecutive green sol (82.0), streak = 2 -> latch clears!
-    r_rec2 = risk_flag([58.8, 80.0, 82.0], {}, crew_id="C002")
+    r_rec2 = risk_flag([58.8, 80.0, 82.0], {}, crew_id="C002", history=history, sol=145)
     assert r_rec2["flag"] is False, "Flag should unlatch after 2 consecutive green sols"
+
+
+def test_risk_flag_order_independence_140_to_145():
+    """Task 6(a): Calling sols in order 140..145, 145..140, and random order gives identical results every time."""
+    import random
+
+    history = [
+        {"sol": 140, "cri": 98.8, "anomaly_flags": {}},
+        {"sol": 141, "cri": 92.6, "anomaly_flags": {"sleep": True, "mood": True}},
+        {"sol": 142, "cri": 85.0, "anomaly_flags": {"sleep": True}},
+        {"sol": 143, "cri": 58.8, "anomaly_flags": {"hr": True, "hrv": True, "radiation": True}},
+        {"sol": 144, "cri": 80.0, "anomaly_flags": {}},
+        {"sol": 145, "cri": 82.0, "anomaly_flags": {}},
+    ]
+
+    def evaluate_sol(s: int) -> dict:
+        cri_window = [h["cri"] for h in history if h["sol"] <= s][-3:]
+        anomalies = next(h["anomaly_flags"] for h in history if h["sol"] == s)
+        return risk_flag(cri_window, anomalies, crew_id="C002", history=history, sol=s)
+
+    # 1. Forward sequential: 140 -> 145
+    forward_results = {s: evaluate_sol(s) for s in range(140, 146)}
+
+    # 2. Backward reverse: 145 -> 140
+    backward_results = {s: evaluate_sol(s) for s in reversed(range(140, 146))}
+
+    # 3. Multiple random permutations
+    rng = random.Random(42)
+    random_runs = []
+    for _ in range(10):
+        sols_shuffled = list(range(140, 146))
+        rng.shuffle(sols_shuffled)
+        random_runs.append({s: evaluate_sol(s) for s in sols_shuffled})
+
+    # Assert exact identity across all orders
+    for s in range(140, 146):
+        assert forward_results[s]["flag"] == backward_results[s]["flag"], f"Forward vs backward mismatch at Sol {s}"
+        assert forward_results[s]["drivers"] == backward_results[s]["drivers"]
+        assert forward_results[s]["predicted_cri"] == backward_results[s]["predicted_cri"]
+
+        for run in random_runs:
+            assert run[s]["flag"] == forward_results[s]["flag"], f"Random run mismatch at Sol {s}"
+            assert run[s]["drivers"] == forward_results[s]["drivers"]
+            assert run[s]["predicted_cri"] == forward_results[s]["predicted_cri"]
+
+    # Verify expected business rules per sol
+    assert forward_results[140]["flag"] is False
+    assert forward_results[141]["flag"] is True
+    assert forward_results[142]["flag"] is True   # Latched from Sol 141
+    assert forward_results[143]["flag"] is True   # Acute radiation spike
+    assert forward_results[144]["flag"] is True   # Recovery sol 1 (streak=1)
+    assert forward_results[145]["flag"] is False  # Recovery sol 2 (streak=2 -> unlatched)
+
+
+def test_risk_flag_concurrency_50_threads():
+    """Task 6(b): 50 threads calling with mixed sols give identical results to sequential calls."""
+    from concurrent.futures import ThreadPoolExecutor
+    import random
+
+    history = [
+        {"sol": 140, "cri": 98.8, "anomaly_flags": {}},
+        {"sol": 141, "cri": 92.6, "anomaly_flags": {"sleep": True, "mood": True}},
+        {"sol": 142, "cri": 85.0, "anomaly_flags": {"sleep": True}},
+        {"sol": 143, "cri": 58.8, "anomaly_flags": {"hr": True, "hrv": True, "radiation": True}},
+        {"sol": 144, "cri": 80.0, "anomaly_flags": {}},
+        {"sol": 145, "cri": 82.0, "anomaly_flags": {}},
+    ]
+
+    def evaluate_sol(s: int) -> dict:
+        cri_window = [h["cri"] for h in history if h["sol"] <= s][-3:]
+        anomalies = next(h["anomaly_flags"] for h in history if h["sol"] == s)
+        return risk_flag(cri_window, anomalies, crew_id="C002", history=history, sol=s)
+
+    baseline = {s: evaluate_sol(s) for s in range(140, 146)}
+
+    # Generate 200 tasks calling random sols across 50 worker threads
+    rng = random.Random(123)
+    tasks = [rng.choice(list(range(140, 146))) for _ in range(200)]
+
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        results = list(executor.map(evaluate_sol, tasks))
+
+    for sol, res in zip(tasks, results):
+        assert res["flag"] == baseline[sol]["flag"], f"Concurrency mismatch at sol {sol}"
+        assert res["drivers"] == baseline[sol]["drivers"]
+        assert res["predicted_cri"] == baseline[sol]["predicted_cri"]
+
+
+def test_risk_flag_healthy_vs_stressed_window():
+    """Task 6(c): Healthy window not flagged; C002-like window flagged."""
+    # 1. Healthy window: stable CRI, 0 anomalies
+    healthy_cri = [85.0, 84.8, 85.0]
+    healthy_anomalies = {feat: False for feat in FEATURES}
+    healthy_res = risk_flag(healthy_cri, healthy_anomalies, crew_id="C001")
+    assert healthy_res["flag"] is False
+    assert len(healthy_res["drivers"]) == 0
+    assert healthy_res["predicted_cri"] >= 75.0
+
+    # 2. C002-like stressed window: acute radiation spike, elevated HR, depressed HRV
+    stressed_cri = [92.6, 85.0, 58.8]
+    stressed_anomalies = {"radiation": True, "hr": True, "hrv": True, "sleep": False, "exercise": False, "mood": False}
+    stressed_res = risk_flag(stressed_cri, stressed_anomalies, crew_id="C002")
+    assert stressed_res["flag"] is True
+    assert len(stressed_res["drivers"]) >= 1
+    assert any("Radiation" in d for d in stressed_res["drivers"])
+
+
+def test_risk_flag_release_after_3_consecutive_green_sols():
+    """Task 6(d): Release behaviour after 3 consecutive green sols matches the old semantics."""
+    history = [
+        {"sol": 140, "cri": 98.8, "anomaly_flags": {}},
+        {"sol": 141, "cri": 58.8, "anomaly_flags": {"radiation": True, "hr": True}},  # Triggers latch ON
+        {"sol": 142, "cri": 80.0, "anomaly_flags": {}},  # Green 1: CRI 80.0, but extrapolation from 98.8->58.8->80 is <60
+        {"sol": 143, "cri": 82.0, "anomaly_flags": {}},  # Green 2: CRI 82.0, streak = 1 -> remains latched
+        {"sol": 144, "cri": 84.0, "anomaly_flags": {}},  # Green 3: CRI 84.0, streak = 2 -> latch releases!
+    ]
+
+    # Sol 141: Acute drop into amber/red (<60) triggers flag
+    r141 = risk_flag([98.8, 58.8], {"radiation": True, "hr": True}, crew_id="C002", history=history, sol=141)
+    assert r141["flag"] is True
+
+    # Sol 142 (Green sol 1): CRI 80.0 >= 75.0, 0 anomalies. Extrapolation still <60 -> flag stays True.
+    r142 = risk_flag([98.8, 58.8, 80.0], {}, crew_id="C002", history=history, sol=142)
+    assert r142["flag"] is True, "Flag must remain latched on 1st green sol"
+
+    # Sol 143 (Green sol 2): CRI 82.0 >= 75.0, 0 anomalies. streak = 1 -> remains latched.
+    r143 = risk_flag([58.8, 80.0, 82.0], {}, crew_id="C002", history=history, sol=143)
+    assert r143["flag"] is True, "Flag must remain latched on 2nd green sol while streak < 2"
+
+    # Sol 144 (Green sol 3): CRI 84.0 >= 75.0, 0 anomalies. streak = 2 -> latch releases!
+    r144 = risk_flag([80.0, 82.0, 84.0], {}, crew_id="C002", history=history, sol=144)
+    assert r144["flag"] is False, "Flag must release after 3 consecutive green sols (streak >= 2)"
+
+
+def test_risk_flag_fewer_than_3_cri_values():
+    """Task 6(e): Fewer than 3 CRI values handled gracefully (2, 1, 0 values)."""
+    # 1. Two CRI values: steep decline slope y2 + 2*(y2 - y1)
+    res_2_decline = risk_flag([85.0, 70.0], {}, crew_id="C001")
+    # slope = 70 - 85 = -15 -> predicted = 70 + 2*(-15) = 40.0 < 60
+    assert res_2_decline["flag"] is True
+    assert res_2_decline["predicted_cri"] == 40.0
+    assert res_2_decline["predictedWindowHours"] == 48
+
+    # Two CRI values: stable
+    res_2_stable = risk_flag([85.0, 85.0], {}, crew_id="C001")
+    assert res_2_stable["flag"] is False
+    assert res_2_stable["predicted_cri"] == 85.0
+
+    # 2. One CRI value: predicted_cri equals that single value
+    res_1 = risk_flag([55.0], {}, crew_id="C001")
+    assert res_1["predicted_cri"] == 55.0
+    assert res_1["flag"] is True  # 55.0 < 60.0
+
+    res_1_green = risk_flag([85.0], {}, crew_id="C001")
+    assert res_1_green["predicted_cri"] == 85.0
+    assert res_1_green["flag"] is False
+
+    # 3. Zero CRI values: defaults safely to predicted_cri=100.0 without error
+    res_0 = risk_flag([], {}, crew_id="C001")
+    assert res_0["predicted_cri"] == 100.0
+    assert res_0["flag"] is False
+    assert res_0["predictedWindowHours"] == 48
 
 
 def test_risk_flag_healthy_crew_never_raises():
@@ -297,4 +476,99 @@ def test_risk_flag_healthy_crew_never_raises():
         res = risk_flag(window, anomalies, crew_id="C001")
         assert res["flag"] is False, f"Healthy crew member raised flag on step {idx}"
         assert res["predictedWindowHours"] == 48
+
+
+def test_decision_function_runtime_error_reports_zscore_fallback_and_flag_works(
+    c002_stressed_window, healthy_vitals_series, caplog
+):
+    """Test 4.1: A model whose decision_function raises RuntimeError => method is 'zscore_fallback' and flag still works."""
+    class CrashingModel:
+        def decision_function(self, X):
+            raise RuntimeError("Simulated internal scikit-learn tree evaluation crash")
+
+    crashing_model = CrashingModel()
+
+    # 1. Direct score() check: returns fallback score and method='zscore_fallback'
+    with caplog.at_level(logging.WARNING):
+        score_val, method = score(crashing_model, c002_stressed_window[1])
+    assert isinstance(score_val, float)
+    assert method == "zscore_fallback"
+    # Verify ONE short warning was logged without sensitive payload
+    warnings = [r for r in caplog.records if r.levelname == "WARNING" and "decision_function failed" in r.message]
+    assert len(warnings) == 1
+    assert "RuntimeError" in warnings[0].message
+    assert "C002" not in warnings[0].message
+
+    # 2. detect_anomalies check: stressed C002 still triggers flag=True via z-score and reports 'zscore_fallback'
+    c002_vitals = healthy_vitals_series[:14] + c002_stressed_window
+    res_stressed = detect_anomalies(
+        vitals_history=c002_vitals,
+        cri_history=[82.0, 75.0, 61.2],
+        model=crashing_model,
+    )
+    assert res_stressed["method"] == "zscore_fallback"
+    assert res_stressed["flag"] is True
+    assert len(res_stressed["drivers"]) >= 1
+
+    # 3. Healthy data with crashing model: flag is False, method is 'zscore_fallback'
+    res_healthy = detect_anomalies(
+        vitals_history=healthy_vitals_series,
+        cri_history=[85.0, 85.0, 85.0],
+        model=crashing_model,
+    )
+    assert res_healthy["method"] == "zscore_fallback"
+    assert res_healthy["flag"] is False
+
+
+def test_healthy_model_reports_normal_method_string(healthy_vitals_series):
+    """Test 4.2: A healthy model => normal method string ('extrapolation+isolation_forest')."""
+    model = train(healthy_vitals_series)
+    assert hasattr(model, "decision_function")
+
+    # 1. Direct score() check
+    score_val, method = score(model, healthy_vitals_series[-1])
+    assert isinstance(score_val, float)
+    assert method == "isolation_forest"
+
+    # 2. detect_anomalies check
+    res = detect_anomalies(
+        vitals_history=healthy_vitals_series,
+        cri_history=[85.0, 85.0, 85.0],
+        model=model,
+    )
+    assert res["method"] == "extrapolation+isolation_forest"
+    assert res["flag"] is False
+
+
+def test_sklearn_import_failure_simulated_uses_zscore_and_correct_method(
+    healthy_vitals_series, c002_stressed_window, caplog
+):
+    """Test 4.3: sklearn import failure simulated => z-score only and correct method ('zscore_fallback')."""
+    with patch.dict("sys.modules", {"sklearn.ensemble": None}):
+        with caplog.at_level(logging.WARNING):
+            model = train(healthy_vitals_series)
+        assert isinstance(model, dict)
+        assert not hasattr(model, "decision_function")
+
+        # Verify ONE short warning was logged for fallback event
+        train_warnings = [r for r in caplog.records if r.levelname == "WARNING" and "training failed" in r.message]
+        assert len(train_warnings) == 1
+        assert "ModuleNotFoundError" in train_warnings[0].message
+
+        # Direct score check
+        sc_val, sc_method = score(model, healthy_vitals_series[-1])
+        assert isinstance(sc_val, float)
+        assert sc_method == "zscore_fallback"
+
+        # End-to-end detect_anomalies check
+        c002_vitals = healthy_vitals_series[:14] + c002_stressed_window
+        res = detect_anomalies(
+            vitals_history=c002_vitals,
+            cri_history=[82.0, 75.0, 61.2],
+            model=model,
+        )
+        assert res["method"] == "zscore_fallback"
+        assert res["flag"] is True
+        assert len(res["drivers"]) >= 1
+
 
