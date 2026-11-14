@@ -137,3 +137,28 @@ def test_scenario_sol_range_validation():
 
     resp_high = client.get("/api/v1/scenario/state?sol=146")
     assert resp_high.status_code == 422
+
+
+def test_scenario_alert_crifrom_severity_monotonicity_and_driver_labels():
+    """Verify Task 3: criFrom is max CRI of 3 sols before, severity does not flip warning->watch, drivers use crew_service labels."""
+    # 1. At Sol 144: criFrom = max of Sol 141-143 = 86.6, criTo = 61.9
+    resp144 = client.get("/api/v1/scenario/state?sol=144").json()
+    alert144 = next(a for a in resp144["alerts"] if a["crewId"] == "C002")
+    assert alert144["criFrom"] == pytest.approx(86.6, abs=0.2)
+    assert alert144["criTo"] == pytest.approx(61.9, abs=0.2)
+
+    # 2. Severity must not flip warning -> watch -> warning across Sol 143-145
+    severities = []
+    for s in [143, 144, 145]:
+        resp = client.get(f"/api/v1/scenario/state?sol={s}").json()
+        alert = next((a for a in resp["alerts"] if a["crewId"] == "C002"), None)
+        assert alert is not None
+        severities.append((s, alert["severity"]))
+        # 3. No driver label is 'Cardio'; must use full labels
+        for d in alert["drivers"]:
+            assert d != "Cardio"
+            assert "Cardio" not in d or d == "Cardiovascular strain"
+    
+    # Severity must be 'warning' throughout 143-145
+    for s, sev in severities:
+        assert sev in ("warning", "critical"), f"Sol {s} severity flipped down to {sev}"
