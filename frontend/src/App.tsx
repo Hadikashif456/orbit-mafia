@@ -1,19 +1,25 @@
 import type { FC } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
 import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
+import { CrewBoardPage } from './pages/CrewBoardPage';
 import { AstronautDetail } from './pages/AstronautDetail';
 import { DemoMode } from './pages/DemoMode';
 import { CosmosProvider } from './cosmos/CosmosContext';
 import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
 import { CosmicSceneSwitcher } from './cosmos/CosmicSceneSwitcher';
 
+const AppBackdrop: FC = () => {
+  const { pathname } = useLocation();
+  return pathname === '/crew' ? null : <CosmicBackdrop />;
+};
+
 export const App: FC = () => {
   return (
     <BrowserRouter>
       <CosmosProvider>
       {/* Animated ASCII universe behind every view; never takes pointer events */}
-      <CosmicBackdrop />
+      <AppBackdrop />
       <div className="relative z-10 min-h-screen flex flex-col text-slate-100">
         {/* Mandatory safety disclaimer on every view */}
         <DisclaimerBar />
@@ -26,9 +32,14 @@ export const App: FC = () => {
                 <span className="text-cyan-400">Vital</span>Orbit
               </Link>
               <nav className="flex items-center gap-4 text-sm font-medium">
-                <Link to="/" className="text-slate-300 hover:text-white transition-colors">
+                <NavLink
+                  to="/crew"
+                  className={({ isActive }) =>
+                    `transition-colors ${isActive ? 'text-white' : 'text-slate-300 hover:text-white'}`
+                  }
+                >
                   Crew Board
-                </Link>
+                </NavLink>
                 <Link to="/crew/C001" className="text-slate-300 hover:text-white transition-colors">
                   Astronaut Detail
                 </Link>
@@ -50,6 +61,7 @@ export const App: FC = () => {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<CrewBoard />} />
+            <Route path="/crew" element={<CrewBoardPage />} />
             <Route path="/crew/:id" element={<AstronautDetail />} />
             <Route path="/demo" element={<DemoMode />} />
             <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />

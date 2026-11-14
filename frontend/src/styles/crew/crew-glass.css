@@ -1,0 +1,55 @@
+.crew-board-page[data-glass="clear"],
+.crew-board-page:not([data-glass]) {
+  --glass-tint: 0.14;
+  --glass-blur: 3px;
+  --glass-saturate: 130%;
+  --glass-scrim: 0.45;
+}
+
+.crew-board-page[data-glass="frosted"] {
+  --glass-tint: 0.22;
+  --glass-blur: 10px;
+  --glass-saturate: 140%;
+  --glass-scrim: 0.3;
+}
+
+.crew-board-page[data-glass="liquid"] {
+  --glass-tint: 0.1;
+  --glass-blur: 2px;
+  --glass-saturate: 150%;
+  --glass-scrim: 0.5;
+}
+
+@supports ((backdrop-filter: url("#crew-liquid")) or (-webkit-backdrop-filter: url("#crew-liquid"))) {
+  .crew-board-page[data-glass="liquid"] .crew-card::before {
+    -webkit-backdrop-filter: url("#crew-liquid") blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: url("#crew-liquid") blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  }
+}
+
+@supports not ((backdrop-filter: url("#crew-liquid")) or (-webkit-backdrop-filter: url("#crew-liquid"))) {
+  .crew-board-page[data-glass="liquid"] {
+    --glass-tint: 0.14;
+    --glass-blur: 3px;
+    --glass-saturate: 130%;
+    --glass-scrim: 0.45;
+  }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .crew-board-page[data-glass="clear"],
+  .crew-board-page[data-glass="frosted"],
+  .crew-board-page[data-glass="liquid"] {
+    --glass-tint: 0.45;
+  }
+}
+
+@media (max-width: 767px) {
+  .crew-board-page[data-glass="frosted"],
+  .crew-board-page[data-glass="liquid"] {
+    --glass-tint: 0.14;
+    --glass-blur: 3px;
+    --glass-saturate: 130%;
+    --glass-scrim: 0.45;
+  }
+}
