@@ -1,9 +1,11 @@
 import type { CameraProfile } from './CameraController';
+import { ASTRONAUT_FRAG } from './shaders/astronaut';
 import { CRIMSON_FRAG } from './shaders/crimson';
 import { DREAMSCAPE_FRAG } from './shaders/dreamscape';
+import { EYE_FRAG } from './shaders/eye';
 import { SOLARIS_FRAG } from './shaders/solaris';
 
-export type SceneId = 'dreamscape' | 'solaris' | 'crimson';
+export type SceneId = 'dreamscape' | 'solaris' | 'crimson' | 'astronaut' | 'eye';
 
 export interface SceneDefinition {
   id: SceneId;
@@ -97,7 +99,56 @@ export const CRIMSON: SceneDefinition = {
   },
 };
 
+export const ASTRONAUT: SceneDefinition = {
+  id: 'astronaut',
+  index: '04',
+  name: 'Edge of Everything',
+  tagline: 'An astronaut sits on a ledge above the stars, legs swinging, the Earth far away.',
+  path: 'astronaut',
+  accent: '#BFE3F2',
+  background: '#030812',
+  fallback:
+    'radial-gradient(70% 60% at 25% 65%, rgba(95,163,194,0.45), transparent 70%), radial-gradient(50% 50% at 70% 30%, rgba(44,92,134,0.35), transparent 75%), #030812',
+  fragment: ASTRONAUT_FRAG,
+  fx: { glow: 0.2, grain: 0.045, vignette: 0.6, gain: 1.1 },
+  camera: {
+    accel: 2.6,
+    maxSpeed: 0.75,
+    damping: 2.5,
+    driftX: 0.02,
+    driftY: 0.01,
+    driftZ: 0.025,
+    driftRate: 0.04,
+    parallax: 0.03,
+  },
+};
+
+export const EYE: SceneDefinition = {
+  id: 'eye',
+  index: '05',
+  name: 'The Watcher',
+  tagline: 'The Earth opens like an eye at the heart of a galaxy, looks at you, and closes.',
+  path: 'eye',
+  accent: '#7FD0F5',
+  background: '#02030A',
+  fallback:
+    'radial-gradient(circle at 50% 49%, #050B1E 0, #0A1F4D 7%, #1E6FD0 13%, #F4EDE4 14%, #1D6BB8 22%, #0A2A66 29%, rgba(95,168,255,0.5) 30%, transparent 34%), #02030A',
+  fragment: EYE_FRAG,
+  fx: { glow: 0.18, grain: 0.04, vignette: 0.6, gain: 1.1 },
+  // Large pointer parallax: on this screen it also steers the eye's gaze.
+  camera: {
+    accel: 2.6,
+    maxSpeed: 0.75,
+    damping: 2.5,
+    driftX: 0.015,
+    driftY: 0.008,
+    driftZ: 0.03,
+    driftRate: 0.04,
+    parallax: 0.11,
+  },
+};
+
 /** In scroll order: the cosmos page walks through these top to bottom. */
-export const SCENES: readonly SceneDefinition[] = [SOLARIS, DREAMSCAPE, CRIMSON];
+export const SCENES: readonly SceneDefinition[] = [SOLARIS, DREAMSCAPE, CRIMSON, ASTRONAUT, EYE];
 
 export const getScene = (id: SceneId): SceneDefinition => SCENES.find((s) => s.id === id) ?? SOLARIS;
