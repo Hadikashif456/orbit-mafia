@@ -108,13 +108,26 @@ def health_deps_check():
     """Reports dependency readiness (db, groq_key_present) without revealing secrets."""
     db_available = False
     try:
-        import os
+        from pathlib import Path
         import sqlite3
-        if os.path.exists(settings.DB_PATH):
-            conn = sqlite3.connect(f"file:{settings.DB_PATH}?mode=ro", uri=True)
-            conn.execute("SELECT 1")
+        db_path = Path(settings.DB_PATH)
+        if not db_path.exists():
+            repo_root = Path(__file__).resolve().parents[2]
+            cand = repo_root / "backend" / db_path
+            if cand.exists():
+                db_path = cand
+            else:
+                cand2 = repo_root / db_path
+                if cand2.exists():
+                    db_path = cand2
+        if db_path.exists():
+            uri = f"file:{db_path.resolve().as_posix()}?mode=ro"
+            conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
+            vitals_count = conn.execute("SELECT COUNT(*) FROM vitals").fetchone()[0]
+            biomarkers_count = conn.execute("SELECT COUNT(*) FROM biomarkers").fetchone()[0]
             conn.close()
-            db_available = True
+            if vitals_count > 0 and biomarkers_count > 0:
+                db_available = True
     except Exception:
         db_available = False
 

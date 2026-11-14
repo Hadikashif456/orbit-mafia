@@ -18,13 +18,14 @@ build/
 
 # Database
 *.db
+!data/processed/orbit_mafia.db
 *.sqlite
 *.sqlite3
 
 # Data processing
-data/processed/
 data/processed/*
 !data/processed/.gitkeep
+!data/processed/orbit_mafia.db
 
 # IDE & OS
 .vscode/

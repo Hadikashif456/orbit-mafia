@@ -4,6 +4,7 @@ Refuses to start in production if ALLOWED_ORIGINS contains wildcard '*'.
 Loads Groq API configurations with optional GROQ_API_KEY to support offline/cached operations.
 """
 
+from pathlib import Path
 from typing import List, Optional, Union
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,11 +22,11 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     GROQ_FALLBACK_MODEL: str = "openai/gpt-oss-20b"
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
-    GROQ_TIMEOUT_SECONDS: int = 8
-    DB_PATH: str = "./orbit_mafia.db"
+    GROQ_TIMEOUT_SECONDS: int = 10
+    DB_PATH: str = str(Path(__file__).resolve().parents[2] / "data" / "processed" / "orbit_mafia.db")
     RATE_LIMIT_DEFAULT: str = "60/minute"
-    RATE_LIMIT_COPILOT: str = "60/minute"
-    RATE_LIMIT_COPILOT_DAILY: str = "1000/day"
+    RATE_LIMIT_COPILOT: str = "30/minute"
+    RATE_LIMIT_COPILOT_DAILY: str = "300/day"
     GROQ_MAX_CONCURRENT: int = 3
     GROQ_LIVE_MAX_PER_HOUR: int = 60
 
