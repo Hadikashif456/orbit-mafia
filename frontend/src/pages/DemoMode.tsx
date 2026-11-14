@@ -1,6 +1,16 @@
-import type { FC } from 'react';
+import { useEffect, type FC } from 'react';
+import { useCosmos } from '../cosmos/CosmosContext';
+import { EYE } from '../cosmos/scenes';
 
 export const DemoMode: FC = () => {
+  const { scene, setScene } = useCosmos();
+
+  useEffect(() => {
+    const previousScene = scene;
+    setScene(EYE.id);
+    return () => setScene(previousScene);
+  }, [setScene]);
+
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold tracking-tight text-slate-100">
