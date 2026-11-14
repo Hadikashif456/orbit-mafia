@@ -29,12 +29,23 @@ app.state.limiter = limiter
 # 1. Request size limit middleware (<= 1 KB per request body)
 @app.middleware("http")
 async def limit_request_size_middleware(request: Request, call_next):
-    content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > 1024:
-        return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"error": {"code": "VALIDATION_ERROR", "message": "Request body exceeds maximum size (1 KB)."}},
-        )
+    if request.method in ("POST", "PUT", "PATCH"):
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                if int(content_length) > 1024:
+                    return JSONResponse(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        content={"error": {"code": "VALIDATION_ERROR", "message": "Request body exceeds maximum size (1 KB)."}},
+                    )
+            except ValueError:
+                pass
+        body = await request.body()
+        if len(body) > 1024:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={"error": {"code": "VALIDATION_ERROR", "message": "Request body exceeds maximum size (1 KB)."}},
+            )
     return await call_next(request)
 
 # 2. CORS allowlist middleware
@@ -89,6 +100,28 @@ async def generic_exception_handler(request: Request, exc: Exception):
 def health_check():
     """Health check endpoint confirming service readiness."""
     return {"status": "ok"}
+
+
+# Dependency Health Check
+@app.get("/api/v1/health/deps", tags=["Health"])
+def health_deps_check():
+    """Reports dependency readiness (db, groq_key_present) without revealing secrets."""
+    db_available = False
+    try:
+        import os
+        import sqlite3
+        if os.path.exists(settings.DB_PATH):
+            conn = sqlite3.connect(f"file:{settings.DB_PATH}?mode=ro", uri=True)
+            conn.execute("SELECT 1")
+            conn.close()
+            db_available = True
+    except Exception:
+        db_available = False
+
+    return {
+        "db": db_available,
+        "groq_key_present": settings.groq_key_present,
+    }
 
 
 # Mount API v1 Routers

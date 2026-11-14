@@ -4,8 +4,25 @@ from typing import List, Optional
 from fastapi import APIRouter, Path, Query, HTTPException, status
 from app.models import CrewSummary, VitalPoint, CRIResult, Biomarker
 from app.security.validators import validate_crew_id, validate_sol, validate_window
+from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
+from app.services.data_access import get_vitals_history, get_biomarkers
 
 router = APIRouter(prefix="/crew", tags=["Crew"])
+
+
+# ==============================================================================
+# Data Layer Integration Stubs
+# Delegates to data_access service.
+# ==============================================================================
+
+def _get_vitals_history_stub(crew_id: str, sol: int) -> List[VitalPoint]:
+    """Delegates to data_access.get_vitals_history."""
+    return get_vitals_history(crew_id, sol)
+
+
+def _get_biomarkers_stub(crew_id: str) -> List[Biomarker]:
+    """Delegates to data_access.get_biomarkers."""
+    return get_biomarkers(crew_id)
 
 
 @router.get("", response_model=List[CrewSummary])
@@ -86,28 +103,20 @@ def get_crew_cri(
     id: str = Path(..., pattern=r"^C00[1-4]$", description="Astronaut ID"),
     sol: Optional[int] = Query(144, ge=1, le=200, description="Mission Sol"),
 ) -> CRIResult:
-    """Retrieve detailed CRI breakdown and stress contributions."""
-    return CRIResult(
-        crewId=id,
-        sol=sol or 144,
-        cri=61.2,
-        status="amber",
-        contributions={
-            "radiation": 13.5,
-            "sleep": 9.1,
-            "cardio": 10.4,
-            "mood": 3.8,
-            "inflammation": 2.0,
-        },
-        weights={
-            "radiation": 0.30,
-            "sleep": 0.25,
-            "cardio": 0.25,
-            "mood": 0.10,
-            "inflammation": 0.10,
-        },
-        formulaVersion="v1",
-        provenance="SYNTHETIC+REAL_OSDR",
+    """Retrieve calculated Crew Resilience Index (CRI) and stress term contributions."""
+    current_sol = sol if sol is not None else 144
+    vitals_history = _get_vitals_history_stub(id, current_sol)
+    baseline = get_baseline(vitals_history)
+    vitals_window = [v for v in vitals_history if current_sol - 2 <= v.sol <= current_sol]
+    biomarkers = _get_biomarkers_stub(id)
+    inflammation = compute_inflammation_score(biomarkers)
+
+    return compute_cri(
+        vitals_window=vitals_window,
+        baseline=baseline,
+        inflammation_score=inflammation,
+        crew_id=id,
+        sol=current_sol,
     )
 
 

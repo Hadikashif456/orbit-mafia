@@ -1,0 +1,13 @@
+title = "VitalOrbit Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "groq-api-key"
+description = "Detected Groq API Key (gsk_ prefix)"
+regex = '''gsk_[a-zA-Z0-9]{40,}'''
+secretGroup = 0
+keywords = [
+    "gsk_",
+]

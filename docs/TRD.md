@@ -14,7 +14,7 @@ Version 1.0 · Companion to PRD.md and SECURITY.md · Design lives in `design.md
 │  - Mock fallback     │                   │  │   ├─ cri_engine          │
 └──────────────────────┘                   │  │   ├─ anomaly             │
         ▲                                  │  │   ├─ scenario_engine     │
-        │ VITE_USE_MOCK=true               │  │   └─ copilot_service ────┼──► LLM API (key only here)
+        │ VITE_USE_MOCK=true               │  │   └─ copilot_service ────┼──► Groq API (httpx, key only here)
    /src/mocks (static JSON)                │  └─ db (SQLite, read-only)  │
                                            └─────────────────────────────┘
                                                       ▲
@@ -32,7 +32,7 @@ Principles: contract-first API; routers thin, services pure and testable; fronte
 | Backend | Python 3.11, FastAPI, Uvicorn, Pydantic v2, pydantic-settings, slowapi | |
 | Data/ML | pandas, numpy, scikit-learn (IsolationForest) | |
 | Storage | SQLite file (`backend/vitalorbit.db`, git-ignored, rebuilt by scripts) | API opens it read-only |
-| LLM | Anthropic API via backend only | Model name from env var |
+| LLM | Groq API via backend only (httpx, OpenAI-compatible chat completions) | Model names and endpoint from env vars |
 | Testing | pytest, Vitest, bandit, pip-audit, npm audit | |
 | Hosting | Frontend: Vercel/Netlify; backend: Render/Railway | HTTPS only |
 | CI hygiene | gitleaks pre-commit, ESLint, Ruff or flake8 (optional) | |
@@ -149,7 +149,7 @@ Each term is a stress score in [0, 1]; weights sum to 1.0 and are stored in conf
 1. Input: only `{crewId, sol}` (validated). **No free text from the browser.**
 2. Server computes the CRI, drivers and alert (never takes numbers from the client).
 3. Retrieve relevant countermeasures from `knowledge/countermeasures.md` by driver keyword (simple keyword match; no vector DB).
-4. Build prompt server-side; call the LLM with `max_tokens` ≤ 600, timeout 8s, temperature ≤ 0.3.
+4. Build prompt server-side; call Groq's OpenAI-compatible chat completions endpoint (`https://api.groq.com/openai/v1/chat/completions`) using `httpx` (no extra SDK dependency) with `max_tokens` ≤ 600, timeout 8s (`GROQ_TIMEOUT_SECONDS`), temperature ≤ 0.3. Primary model: `GROQ_MODEL` (`openai/gpt-oss-120b`), fallback model: `GROQ_FALLBACK_MODEL` (`openai/gpt-oss-20b`).
 5. Parse JSON; validate with Pydantic; run the no-diagnosis filter; on any failure return the cached/templated response.
 
 **System prompt skeleton**
@@ -230,8 +230,11 @@ Base path `/api/v1`. All responses JSON. Common headers: `Content-Type: applicat
 | `VITE_USE_MOCK` | frontend | `true` | No |
 | `ENV` | backend | `dev` / `prod` | No |
 | `ALLOWED_ORIGINS` | backend | `http://localhost:5173` | No |
-| `LLM_API_KEY` | backend | (set in host dashboard) | **Yes** |
-| `LLM_MODEL` | backend | model id string | No |
+| `GROQ_API_KEY` | backend | (set in host dashboard; prefix `gsk_`) | **Yes** |
+| `GROQ_MODEL` | backend | `openai/gpt-oss-120b` | No |
+| `GROQ_FALLBACK_MODEL` | backend | `openai/gpt-oss-20b` | No |
+| `GROQ_BASE_URL` | backend | `https://api.groq.com/openai/v1` | No |
+| `GROQ_TIMEOUT_SECONDS` | backend | `8` | No |
 | `DB_PATH` | backend | `./vitalorbit.db` | No |
 | `RATE_LIMIT_DEFAULT` / `RATE_LIMIT_COPILOT` | backend | `60/minute` / `10/minute` | No |
 
@@ -245,7 +248,7 @@ Base path `/api/v1`. All responses JSON. Common headers: `Content-Type: applicat
 | Validators | bad crewId, sol out of range, bad window, unknown body fields |
 | Ingestion | row counts per panel, 4 crew × 7 timepoints, no nulls |
 | Scenario | Sol 143 spike makes C002 drop ≥ 20 points by Sol 144 |
-| Copilot | schema validation, forbidden-word filter swaps to fallback, works without key |
+| Copilot | schema validation, forbidden-word filter swaps to fallback, works without Groq key |
 | API | `/health`, `/crew`, 422 on bad input, 429 on burst |
 | Frontend | status helper boundaries (Vitest), Zod parse of mocks |
 | Manual | wifi-off run; Play demo end to end; phone viewport |
@@ -254,11 +257,11 @@ Base path `/api/v1`. All responses JSON. Common headers: `Content-Type: applicat
 
 1. Backend: deploy to Render/Railway; set env vars in dashboard; build command `pip install -r requirements.txt && python scripts/ingest_osdr.py && python scripts/generate_synthetic.py`; start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
 2. Frontend: `npm run build`; deploy `dist/` to Vercel/Netlify; set `VITE_API_BASE_URL` to the backend HTTPS URL; CSP + security headers in `vercel.json` / `_headers`.
-3. Smoke test: `/health`, Crew Board, Play demo, copilot with and without the key, wifi-off (mock mode build).
+3. Smoke test: `/health`, Crew Board, Play demo, copilot with and without the Groq key, wifi-off (mock mode build).
 4. Keep a **mock-only build** as a fallback deployment in case the backend host fails during judging.
 
 ## 15. Open technical decisions (decide in Hour 0–2)
 
 - Which 3–6 immune markers go into the inflammation term (decide after inspecting the Eve immune file columns).
 - Hosting providers (default Vercel + Render).
-- Whether the LLM key has a hard spend cap (it must).
+- Whether the Groq API key has a hard spend cap (it must).
