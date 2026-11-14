@@ -1,1 +1,1 @@
-"""VitalOrbit Backend Application Package."""
+"""Orbit Mafia Backend Application Package."""

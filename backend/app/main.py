@@ -1,4 +1,4 @@
-"""FastAPI application entry point for VitalOrbit backend."""
+"""FastAPI application entry point for Orbit Mafia backend."""
 
 import logging
 from fastapi import FastAPI, Request, status
@@ -13,10 +13,10 @@ from app.security.headers import SecurityHeadersMiddleware
 from app.security.rate_limit import limiter
 from app.routers import crew_router, scenario_router, copilot_router, provenance_router
 
-logger = logging.getLogger("vitalorbit")
+logger = logging.getLogger("orbitmafia")
 
 app = FastAPI(
-    title="VitalOrbit API",
+    title="Orbit Mafia API",
     description="Autonomous astronaut health resilience monitoring backend.",
     version="1.0.0",
     docs_url="/docs" if settings.ENV != "prod" else None,

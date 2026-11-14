@@ -26,7 +26,7 @@ if str(backend_dir) not in sys.path:
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("vitalorbit.precompute")
+logger = logging.getLogger("orbitmafia.precompute")
 
 # Load environment configuration (.env)
 from dotenv import dotenv_values

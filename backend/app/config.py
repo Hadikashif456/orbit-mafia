@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     GROQ_FALLBACK_MODEL: str = "openai/gpt-oss-20b"
     GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
     GROQ_TIMEOUT_SECONDS: int = 8
-    DB_PATH: str = "./vitalorbit.db"
+    DB_PATH: str = "./orbit_mafia.db"
     RATE_LIMIT_DEFAULT: str = "60/minute"
     RATE_LIMIT_COPILOT: str = "10/minute"
 
