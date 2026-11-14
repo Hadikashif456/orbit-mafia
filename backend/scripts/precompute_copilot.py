@@ -116,10 +116,12 @@ async def fetch_live_copilot(
         snippets=snippets,
     )
     user_prompt += (
-        "\n\nCRITICAL CONSTRAINTS FOR SUGGESTED ACTIONS:\n"
-        "- Include 1 to 3 items in suggestedActions, corresponding ONLY to the NASA Countermeasures Knowledge Snippets provided in CONTEXT above.\n"
-        "- Do NOT invent additional actions or include actions with source 'N/A'.\n"
-        "- For EVERY suggestedActions item, the 'source' attribute MUST EXACTLY match the 'Source: ...' text from the corresponding snippet above (copy it verbatim). Do not alter or omit it."
+        "\n\nCRITICAL CONSTRAINTS FOR OUTPUT:\n"
+        "- NUMERICAL CONSISTENCY: If quoting any numbers (such as CRI scores, Sol numbers, radiation dose in mSv, heart rate, sleep duration), you MUST use the EXACT numbers from CONTEXT above. Never invent, alter, or hallucinate numbers.\n"
+        "- SUGGESTED ACTIONS: Include 1 to 3 items in suggestedActions, corresponding ONLY to the NASA Countermeasures Knowledge Snippets provided in CONTEXT above.\n"
+        "- SOURCES: For EVERY suggestedActions item, the 'source' attribute MUST EXACTLY match the 'Source: ...' text from the corresponding snippet above (copy it verbatim). Do not alter or omit it.\n"
+        "- GROUNDED IN: Include 'groundedIn' as a list of strings of the form 'countermeasures.md#<id>' using the exact snippet IDs from CONTEXT above.\n"
+        "- SAFETY: Never diagnose, never say 'you have', never recommend pharmaceutical medications or dosages."
     )
 
     models_to_try = [settings.GROQ_MODEL, settings.GROQ_FALLBACK_MODEL]
@@ -189,8 +191,18 @@ async def fetch_live_copilot(
                 logger.warning("Groq content failed json.loads for %s:%d: %s", crew_id, sol, exc)
                 break
 
-            if "groundedIn" not in parsed or not isinstance(parsed["groundedIn"], list):
-                parsed["groundedIn"] = [f"countermeasures.md#{s['id']}" for s in snippets] if snippets else ["countermeasures.md#general"]
+            from app.services.knowledge import load_knowledge
+            valid_snippet_ids = {s["id"] for s in load_knowledge()}
+
+            grounded_ids = []
+            if "groundedIn" in parsed and isinstance(parsed["groundedIn"], list):
+                for g in parsed["groundedIn"]:
+                    gid = g.split("#")[-1] if "#" in g else g
+                    if gid in valid_snippet_ids:
+                        grounded_ids.append(f"countermeasures.md#{gid}")
+            if not grounded_ids:
+                grounded_ids = [f"countermeasures.md#{s['id']}" for s in snippets] if snippets else ["countermeasures.md#rad-storm-shelter"]
+            parsed["groundedIn"] = grounded_ids
             parsed.setdefault("disclaimer", "Risk flags and suggested countermeasures only. Not a medical diagnosis.")
             parsed["mode"] = "cached"
 
@@ -277,18 +289,7 @@ async def main() -> None:
         json.dump(cleaned_cache, f, indent=2)
     logger.info("Saved %d total entries to %s", len(cleaned_cache), backend_cache_path)
 
-    # Copy C002:144 and C001:140 to frontend/src/mocks/copilot_cached.json
-    frontend_mock_path.parent.mkdir(parents=True, exist_ok=True)
-    frontend_entries: Dict[str, Any] = {}
-    for required_key in ["C002:144", "C001:140"]:
-        if required_key in cleaned_cache:
-            frontend_entries[required_key] = cleaned_cache[required_key]
-        else:
-            logger.warning("Required key %s not present in cache for frontend mock", required_key)
-
-    with open(frontend_mock_path, "w", encoding="utf-8") as f:
-        json.dump(frontend_entries, f, indent=2)
-    logger.info("Saved %d entries to %s", len(frontend_entries), frontend_mock_path)
+    # Note: Frontend mocks are preserved as-is to adhere strictly to the "Do NOT edit: frontend/" boundary.
 
 
 if __name__ == "__main__":

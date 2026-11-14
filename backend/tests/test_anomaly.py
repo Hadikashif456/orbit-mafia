@@ -572,3 +572,65 @@ def test_sklearn_import_failure_simulated_uses_zscore_and_correct_method(
         assert len(res["drivers"]) >= 1
 
 
+def test_c002_risk_flag_no_flicker_sols_141_to_145():
+    """Verify that C002 risk flag stays latched without flickering at Sol 142.
+    
+    Once raised at Sol 141 (sleep disruption/mood), the latch must remain engaged
+    at Sol 142 despite Sol 142 CRI remaining above the green threshold (since 2 consecutive
+    green sols are required to release), and continue through the Sol 143 SPE spike.
+    """
+    from app.services.data_access import get_vitals_history, get_biomarkers
+    from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
+
+    vitals = get_vitals_history("C002", 145, 145)
+    base = get_baseline(vitals[:14])
+    inflam = compute_inflammation_score(get_biomarkers("C002"))
+
+    vitals_by_sol = {v.sol: v for v in vitals}
+    cris: dict[int, float] = {}
+    contribs: dict[int, dict] = {}
+
+    for s in range(138, 146):
+        w = [v for v in vitals if s - 2 <= v.sol <= s]
+        res = compute_cri(w, base, inflam, crew_id="C002", sol=s)
+        cris[s] = res.cri
+        contribs[s] = res.contributions
+
+    history_records: list[dict] = []
+    flags_by_sol: dict[int, bool] = {}
+
+    for s in range(140, 146):
+        cur_pt = vitals_by_sol[s]
+        rolling_w = [vitals_by_sol[ws] for ws in range(s - 14, s) if ws in vitals_by_sol]
+        rolling_base = compute_rolling_baseline(rolling_w)
+        z_flags = zscore_flags(cur_pt, rolling_base)
+        recent_cri = [cris[cs] for cs in (s - 2, s - 1, s)]
+
+        r_flag = risk_flag(
+            cri_history=recent_cri,
+            anomaly_flags=z_flags,
+            contributions=contribs[s],
+            crew_id="C002",
+            history=history_records,
+            sol=s,
+        )
+        flags_by_sol[s] = r_flag["flag"]
+
+        history_records.append({
+            "sol": s,
+            "cri": cris[s],
+            "cri_history": recent_cri,
+            "anomaly_flags": z_flags,
+            "contributions": contribs[s],
+        })
+
+    # Assert Sol 140 is clear, and Sols 141-145 stay latched with zero flicker
+    assert flags_by_sol[140] is False, "Sol 140 should be clear"
+    assert flags_by_sol[141] is True, "Sol 141 should be raised"
+    assert flags_by_sol[142] is True, "Sol 142 MUST stay raised (no flicker!)"
+    assert flags_by_sol[143] is True, "Sol 143 should be raised"
+    assert flags_by_sol[144] is True, "Sol 144 should be raised"
+    assert flags_by_sol[145] is True, "Sol 145 should be raised"
+
+
+
