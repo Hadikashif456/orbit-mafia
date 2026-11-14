@@ -10,7 +10,7 @@ void main() {
  * Composite pass: turns the per-cell scene buffers into real glyphs.
  * Two character grids are layered — small glyphs for deep space, large glyphs
  * for nearby bodies — so character size depends on depth. During a scene
- * change, two scenes are dissolved cell by cell along a diagonal sweep.
+ * change, the incoming scene rises from the bottom, dissolving cell by cell.
  */
 export const COMPOSITE_FRAG = `#version 300 es
 precision highp float;
@@ -106,13 +106,13 @@ void main() {
   if (uMix > 0.0) {
     vec3 col1 = sceneColor(uFarC1, uFarG1, uNearC1, uNearG1, fp, uFx1, uBg1);
     vec2 cell = floor(fp / uCellN);
-    float th = hash21(cell) * 0.42 + 0.58 * (uv.x * 0.6 + uv.y * 0.4);
+    float th = hash21(cell) * 0.34 + 0.66 * (1.0 - uv.y);
     float prog = uMix * 1.16 - 0.08;
     float m = smoothstep(th - 0.035, th + 0.035, prog);
     float edge = smoothstep(0.07, 0.0, abs(prog - th));
     col = mix(col, col1, m);
     col += edge * 0.07 * mix(uFx0.w, uFx1.w, m) * vec3(1.0, 0.95, 0.9);
-    col *= 1.0 - 0.30 * sin(3.14159265 * uMix);
+    col *= 1.0 - 0.14 * sin(3.14159265 * uMix);
     fx = mix(uFx0, uFx1, uMix);
   }
 

@@ -1,5 +1,5 @@
 /**
- * Camera for the cosmic scenes: keyboard, on-screen pad, wheel and pointer in;
+ * Camera for the cosmic scenes: keyboard, on-screen pad and pointer in;
  * a smoothly damped position out. No rendering code lives here.
  */
 
@@ -25,10 +25,10 @@ export interface CameraProfile {
 }
 
 export const CAMERA_LIMITS = {
-  xMin: -0.55,
-  xMax: 0.55,
-  zMin: -0.6,
-  zMax: 0.7,
+  xMin: -0.85,
+  xMax: 0.85,
+  zMin: -0.7,
+  zMax: 0.8,
   zoomMin: 0.8,
   zoomMax: 1.9,
 } as const;
@@ -85,7 +85,7 @@ export class CameraController {
   };
   private interactive = false;
 
-  /** Keyboard and wheel only steer the camera while interactive. */
+  /** The keyboard only steers the camera while interactive. */
   setInteractive(on: boolean): void {
     this.interactive = on;
     if (!on) this.releaseAll();
@@ -95,9 +95,9 @@ export class CameraController {
     this.held[direction] = on;
   }
 
-  /** A single push, for keyboard activation of the on-screen pad. */
+  /** A single push in one direction. */
   nudge(direction: MoveDirection): void {
-    const kick = 0.22;
+    const kick = 0.40;
     if (direction === 'left') this.vx -= kick;
     if (direction === 'right') this.vx += kick;
     if (direction === 'forward') this.vz += kick;
@@ -176,8 +176,46 @@ export class CameraController {
     };
   }
 
-  /** Listen for keyboard, wheel and pointer input. Returns the cleanup function. */
+  /**
+   * Push the camera in (positive) or out (negative). Used by the mouse:
+   * the push becomes velocity, so the move eases in and coasts to a stop.
+   */
+  travel(amount: number): void {
+    this.returning = false;
+    this.vz = clamp(this.vz + amount, -1.2, 1.2);
+  }
+
+  /**
+   * Listen for keyboard and mouse input. Returns the cleanup function.
+   *
+   * The plain wheel is deliberately left alone: on the cosmos page it
+   * scrolls, and scrolling is what moves between the scenes. Moving in and
+   * out is done by dragging up/down, or with Ctrl + wheel (which is also
+   * what a trackpad pinch sends). Double-click returns to the starting view.
+   */
   attach(target: Window): () => void {
+    let dragging = false;
+    let lastY = 0;
+    const onWheel = (e: WheelEvent): void => {
+      if (!this.interactive || !e.ctrlKey || isEditableTarget(e.target)) return;
+      e.preventDefault();
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+      this.travel(clamp(-e.deltaY * unit, -240, 240) * 0.004);
+    };
+    const onPointerDown = (e: PointerEvent): void => {
+      if (!this.interactive || e.pointerType !== 'mouse' || e.button !== 0) return;
+      if (isEditableTarget(e.target)) return;
+      if (e.target instanceof Element && e.target.closest('a, button')) return;
+      dragging = true;
+      lastY = e.clientY;
+    };
+    const onPointerUp = (): void => {
+      dragging = false;
+    };
+    const onDoubleClick = (e: MouseEvent): void => {
+      if (!this.interactive || isEditableTarget(e.target)) return;
+      this.reset();
+    };
     const onKeyDown = (e: KeyboardEvent): void => {
       if (!this.interactive || e.altKey || e.ctrlKey || e.metaKey) return;
       if (isEditableTarget(e.target)) return;
@@ -190,28 +228,38 @@ export class CameraController {
       const direction = KEY_TO_DIRECTION[e.key];
       if (direction) this.held[direction] = false;
     };
-    const onWheel = (e: WheelEvent): void => {
-      if (!this.interactive || e.ctrlKey || isEditableTarget(e.target)) return;
-      e.preventDefault();
-      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
-      this.zoomBy(clamp(e.deltaY * unit, -240, 240));
-    };
     const onPointerMove = (e: PointerEvent): void => {
       if (e.pointerType === 'touch') return;
       this.setPointer((e.clientX / target.innerWidth) * 2 - 1, (e.clientY / target.innerHeight) * 2 - 1);
+      if (dragging) {
+        // Dragging up moves in, dragging down moves out.
+        this.travel((lastY - e.clientY) * 0.012);
+        lastY = e.clientY;
+      }
     };
-    const onBlur = (): void => this.releaseAll();
+    const onBlur = (): void => {
+      dragging = false;
+      this.releaseAll();
+    };
 
     target.addEventListener('keydown', onKeyDown);
     target.addEventListener('keyup', onKeyUp);
     target.addEventListener('wheel', onWheel, { passive: false });
+    target.addEventListener('pointerdown', onPointerDown);
+    target.addEventListener('pointerup', onPointerUp);
+    target.addEventListener('pointercancel', onPointerUp);
     target.addEventListener('pointermove', onPointerMove, { passive: true });
+    target.addEventListener('dblclick', onDoubleClick);
     target.addEventListener('blur', onBlur);
     return () => {
       target.removeEventListener('keydown', onKeyDown);
       target.removeEventListener('keyup', onKeyUp);
       target.removeEventListener('wheel', onWheel);
+      target.removeEventListener('pointerdown', onPointerDown);
+      target.removeEventListener('pointerup', onPointerUp);
+      target.removeEventListener('pointercancel', onPointerUp);
       target.removeEventListener('pointermove', onPointerMove);
+      target.removeEventListener('dblclick', onDoubleClick);
       target.removeEventListener('blur', onBlur);
     };
   }

@@ -37,3 +37,24 @@
     animation: none;
   }
 }
+
+/* Cosmos page: the scroll cue nods gently. */
+@keyframes cosmos-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+.cosmos-bob {
+  animation: cosmos-bob 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cosmos-bob {
+    animation: none;
+  }
+}

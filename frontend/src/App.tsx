@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
@@ -8,12 +8,6 @@ import { DemoMode } from './pages/DemoMode';
 import { CosmosProvider } from './cosmos/CosmosContext';
 import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
 import { CosmicSceneSwitcher } from './cosmos/CosmicSceneSwitcher';
-
-// The Crew Board page draws its own ASCII scene, so the shared backdrop is skipped there.
-const AppBackdrop: FC = () => {
-  const { pathname } = useLocation();
-  return pathname === '/crew' ? null : <CosmicBackdrop />;
-};
 
 const Shell: FC = () => {
   // The cosmos page is a full-bleed visual with no health data on it, so it
@@ -35,14 +29,9 @@ const Shell: FC = () => {
                   <span className="text-cyan-400">Vital</span>Orbit
                 </Link>
                 <nav className="flex items-center gap-4 text-sm font-medium">
-                  <NavLink
-                    to="/crew"
-                    className={({ isActive }) =>
-                      `transition-colors ${isActive ? 'text-white' : 'text-slate-300 hover:text-white'}`
-                    }
-                  >
+                  <Link to="/" className="text-slate-300 hover:text-white transition-colors">
                     Crew Board
-                  </NavLink>
+                  </Link>
                   <Link to="/crew/C001" className="text-slate-300 hover:text-white transition-colors">
                     Astronaut Detail
                   </Link>
@@ -66,7 +55,6 @@ const Shell: FC = () => {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<CrewBoard />} />
-          <Route path="/crew" element={<CrewBoardPage />} />
           <Route path="/crew/:id" element={<AstronautDetail />} />
           <Route path="/demo" element={<DemoMode />} />
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
@@ -81,7 +69,7 @@ export const App: FC = () => {
     <BrowserRouter>
       <CosmosProvider>
         {/* Animated ASCII universe behind every view; never takes pointer events */}
-        <AppBackdrop />
+        <CosmicBackdrop />
         <Shell />
       </CosmosProvider>
     </BrowserRouter>

@@ -1,8 +1,9 @@
 import type { CameraProfile } from './CameraController';
+import { CRIMSON_FRAG } from './shaders/crimson';
 import { DREAMSCAPE_FRAG } from './shaders/dreamscape';
 import { SOLARIS_FRAG } from './shaders/solaris';
 
-export type SceneId = 'dreamscape' | 'solaris';
+export type SceneId = 'dreamscape' | 'solaris' | 'crimson';
 
 export interface SceneDefinition {
   id: SceneId;
@@ -25,7 +26,7 @@ export interface SceneDefinition {
 
 export const DREAMSCAPE: SceneDefinition = {
   id: 'dreamscape',
-  index: '01',
+  index: '02',
   name: 'Cosmic Dreamscape',
   tagline: 'A ringed giant, a turning galaxy, and gas the colour of orchids.',
   path: 'dreamscape',
@@ -36,9 +37,9 @@ export const DREAMSCAPE: SceneDefinition = {
   fragment: DREAMSCAPE_FRAG,
   fx: { glow: 0.2, grain: 0.035, vignette: 0.55, gain: 1.1 },
   camera: {
-    accel: 1.5,
-    maxSpeed: 0.42,
-    damping: 2.4,
+    accel: 3.0,
+    maxSpeed: 0.85,
+    damping: 2.6,
     driftX: 0.035,
     driftY: 0.02,
     driftZ: 0.03,
@@ -49,7 +50,7 @@ export const DREAMSCAPE: SceneDefinition = {
 
 export const SOLARIS: SceneDefinition = {
   id: 'solaris',
-  index: '02',
+  index: '01',
   name: 'Obsidian Solaris',
   tagline: 'An eclipsed sun behind copper rings. Darker, colder, closer to real.',
   path: 'solaris',
@@ -61,9 +62,9 @@ export const SOLARIS: SceneDefinition = {
   fx: { glow: 0.12, grain: 0.05, vignette: 0.75, gain: 1.08 },
   // Heavier and slower: this scene should feel like a long lens on a real body.
   camera: {
-    accel: 1.1,
-    maxSpeed: 0.32,
-    damping: 2.0,
+    accel: 2.6,
+    maxSpeed: 0.75,
+    damping: 2.4,
     driftX: 0.02,
     driftY: 0.012,
     driftZ: 0.045,
@@ -72,6 +73,31 @@ export const SOLARIS: SceneDefinition = {
   },
 };
 
-export const SCENES: readonly SceneDefinition[] = [DREAMSCAPE, SOLARIS];
+export const CRIMSON: SceneDefinition = {
+  id: 'crimson',
+  index: '03',
+  name: 'Crimson Singularity',
+  tagline: 'A black void full of stars, ringed in red and wrapped in drifting cloud.',
+  path: 'crimson',
+  accent: '#FF5C86',
+  background: '#040205',
+  fallback:
+    'radial-gradient(circle at 50% 48%, #040205 0, #040205 24%, rgba(240,36,90,0.75) 25%, rgba(194,18,63,0.30) 34%, transparent 60%), #040205',
+  fragment: CRIMSON_FRAG,
+  fx: { glow: 0.22, grain: 0.04, vignette: 0.65, gain: 1.1 },
+  camera: {
+    accel: 2.8,
+    maxSpeed: 0.8,
+    damping: 2.5,
+    driftX: 0.03,
+    driftY: 0.016,
+    driftZ: 0.035,
+    driftRate: 0.045,
+    parallax: 0.03,
+  },
+};
 
-export const getScene = (id: SceneId): SceneDefinition => (id === 'solaris' ? SOLARIS : DREAMSCAPE);
+/** In scroll order: the cosmos page walks through these top to bottom. */
+export const SCENES: readonly SceneDefinition[] = [SOLARIS, DREAMSCAPE, CRIMSON];
+
+export const getScene = (id: SceneId): SceneDefinition => SCENES.find((s) => s.id === id) ?? SOLARIS;
