@@ -1,9 +1,37 @@
-__pycache__/
-*.pyc
+# Dependencies
+node_modules/
 .venv/
 venv/
-.env
-node_modules/
+__pycache__/
+*.pyc
+
+# Build outputs
 dist/
 build/
+.turbo/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Data processing
+data/processed/*
+!data/processed/.gitkeep
+
+# IDE & OS
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
+
+# Test & coverage
+.pytest_cache/
+.coverage
+htmlcov/

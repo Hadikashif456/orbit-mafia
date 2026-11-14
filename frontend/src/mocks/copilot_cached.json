@@ -1,0 +1,26 @@
+{
+  "summary": "Cmdr B (C002) experienced cumulative sleep restriction over Sols 141–143 compounded by an acute solar particle event (SPE) at Sol 143, precipitating autonomic strain and a projected CRI decrease below 65.",
+  "drivers": [
+    "Solar particle event radiation spike (9.0 mSv)",
+    "Sleep duration below 6 hours for 3 consecutive sols",
+    "Resting heart rate elevated by +10 bpm over baseline"
+  ],
+  "suggestedActions": [
+    {
+      "title": "Radiation Storm Shelter Protocol",
+      "protocol": "Remain in designated habitat storm shelter module until active dosimeter measures normal transit baseline (<2.0 mSv/day). Reschedule pending EVA spacewalk activities.",
+      "source": "NASA HRP: Space Radiation Bio-Protection Guidelines"
+    },
+    {
+      "title": "Circadian & Sleep Recovery Protocol",
+      "protocol": "Deliver 30 minutes of high-intensity blue-enriched light therapy upon waking. Enforce mandatory 8.5-hour quiet rest opportunity in private crew quarters.",
+      "source": "NASA HRP: Fatigue Management and Countermeasures"
+    }
+  ],
+  "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
+  "groundedIn": [
+    "countermeasures.md#radiation",
+    "countermeasures.md#sleep"
+  ],
+  "mode": "cached"
+}

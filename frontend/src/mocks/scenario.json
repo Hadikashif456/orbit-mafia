@@ -1,0 +1,87 @@
+{
+  "sol": 144,
+  "crew": [
+    {
+      "id": "C001",
+      "callsign": "Cmdr A",
+      "cri": 84.5,
+      "status": "green",
+      "topDriver": "Baseline stable",
+      "sparkline": [85.0, 84.8, 85.1, 84.6, 84.5],
+      "provenance": "SYNTHETIC"
+    },
+    {
+      "id": "C002",
+      "callsign": "Cmdr B",
+      "cri": 61.2,
+      "status": "amber",
+      "topDriver": "Radiation event",
+      "sparkline": [84.0, 83.2, 82.0, 80.1, 61.2],
+      "provenance": "SYNTHETIC"
+    },
+    {
+      "id": "C003",
+      "callsign": "Cmdr C",
+      "cri": 78.0,
+      "status": "green",
+      "topDriver": "Mild sleep debt",
+      "sparkline": [82.0, 81.0, 80.5, 79.0, 78.0],
+      "provenance": "SYNTHETIC"
+    },
+    {
+      "id": "C004",
+      "callsign": "Cmdr D",
+      "cri": 88.0,
+      "status": "green",
+      "topDriver": "Optimal vitals",
+      "sparkline": [87.0, 87.5, 88.0, 87.9, 88.0],
+      "provenance": "SYNTHETIC"
+    }
+  ],
+  "alerts": [
+    {
+      "id": "alt-144-c002",
+      "crewId": "C002",
+      "severity": "warning",
+      "criFrom": 82.0,
+      "criTo": 61.2,
+      "drivers": [
+        "Acute radiation event (9.0 mSv)",
+        "Cumulative sleep restriction (<6h)"
+      ],
+      "predictedWindowHours": 48,
+      "message": "CRI drop detected for C002 following radiation event.",
+      "provenance": "SYNTHETIC"
+    }
+  ],
+  "events": [
+    {
+      "sol": 141,
+      "crewId": "C002",
+      "type": "SLEEP_DISRUPTION",
+      "text": "Sleep disruption begins (C002)",
+      "magnitude": null
+    },
+    {
+      "sol": 143,
+      "crewId": "C002",
+      "type": "RADIATION_SPIKE",
+      "text": "Solar particle event detected: radiation spike",
+      "magnitude": 9.0
+    },
+    {
+      "sol": 144,
+      "crewId": "C002",
+      "type": "CRI_DROP",
+      "text": "CRI drop detected for C002",
+      "magnitude": -20.8
+    },
+    {
+      "sol": 144,
+      "crewId": "C002",
+      "type": "COPILOT_RECOMMENDATION",
+      "text": "Copilot recommendation issued",
+      "magnitude": null
+    }
+  ]
+}

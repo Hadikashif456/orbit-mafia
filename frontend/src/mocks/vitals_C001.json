@@ -1,0 +1,79 @@
+[
+  {
+    "crewId": "C001",
+    "sol": 138,
+    "hr": 62.1,
+    "hrv": 66.4,
+    "sleepHours": 7.4,
+    "radiationMsv": 1.82,
+    "exerciseMin": 45.0,
+    "mood": 4,
+    "provenance": "SYNTHETIC"
+  },
+  {
+    "crewId": "C001",
+    "sol": 139,
+    "hr": 61.8,
+    "hrv": 65.2,
+    "sleepHours": 7.1,
+    "radiationMsv": 1.85,
+    "exerciseMin": 42.0,
+    "mood": 4,
+    "provenance": "SYNTHETIC"
+  },
+  {
+    "crewId": "C001",
+    "sol": 140,
+    "hr": 63.0,
+    "hrv": 64.8,
+    "sleepHours": 7.3,
+    "radiationMsv": 1.80,
+    "exerciseMin": 50.0,
+    "mood": 4,
+    "provenance": "SYNTHETIC"
+  },
+  {
+    "crewId": "C001",
+    "sol": 141,
+    "hr": 62.5,
+    "hrv": 65.9,
+    "sleepHours": 7.0,
+    "radiationMsv": 1.88,
+    "exerciseMin": 45.0,
+    "mood": 4,
+    "provenance": "SYNTHETIC"
+  },
+  {
+    "crewId": "C001",
+    "sol": 142,
+    "hr": 61.9,
+    "hrv": 66.1,
+    "sleepHours": 7.5,
+    "radiationMsv": 1.84,
+    "exerciseMin": 46.0,
+    "mood": 5,
+    "provenance": "SYNTHETIC"
+  },
+  {
+    "crewId": "C001",
+    "sol": 143,
+    "hr": 62.8,
+    "hrv": 64.9,
+    "sleepHours": 7.2,
+    "radiationMsv": 2.10,
+    "exerciseMin": 44.0,
+    "mood": 4,
+    "provenance": "SYNTHETIC"
+  },
+  {
+    "crewId": "C001",
+    "sol": 144,
+    "hr": 62.0,
+    "hrv": 65.5,
+    "sleepHours": 7.3,
+    "radiationMsv": 1.85,
+    "exerciseMin": 45.0,
+    "mood": 4,
+    "provenance": "SYNTHETIC"
+  }
+]
