@@ -7,17 +7,21 @@
 }
 
 .alert-card {
+  --alert-color: var(--status-act-now);
   width: min(100%, 1120px);
   min-height: min(680px, calc(100dvh - var(--header-h) - 14vh));
   margin: auto;
   padding: clamp(22px, 4vw, 52px);
   background: rgba(3, 2, 10, 0.18);
-  border: 1px solid color-mix(in srgb, var(--status-act-now) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--alert-color) 72%, transparent);
   border-radius: var(--card-radius);
-  box-shadow: 0 0 42px color-mix(in srgb, var(--status-act-now) 32%, transparent), inset 0 1px 0 color-mix(in srgb, var(--status-act-now) 38%, transparent);
+  box-shadow: 0 0 42px color-mix(in srgb, var(--alert-color) 32%, transparent), inset 0 1px 0 color-mix(in srgb, var(--alert-color) 38%, transparent);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
+
+.alert-card--amber { --alert-color: var(--status-watch); }
+.alert-card--green { --alert-color: var(--status-optimal); }
 
 .alert-card-heading {
   display: flex;
@@ -28,10 +32,10 @@
 
 .alert-card h1 {
   margin: 8px 0 0;
-  color: var(--status-act-now);
+  color: var(--alert-color);
   font-size: clamp(36px, 6vw, 72px);
   font-weight: 300;
-  text-shadow: 0 0 22px color-mix(in srgb, var(--status-act-now) 60%, transparent);
+  text-shadow: 0 0 22px color-mix(in srgb, var(--alert-color) 60%, transparent);
 }
 
 .alert-back-link {
@@ -51,8 +55,8 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   min-height: 300px;
-  border-top: 1px dotted color-mix(in srgb, var(--status-act-now) 58%, transparent);
-  border-bottom: 1px dotted color-mix(in srgb, var(--status-act-now) 58%, transparent);
+  border-top: 1px dotted color-mix(in srgb, var(--alert-color) 58%, transparent);
+  border-bottom: 1px dotted color-mix(in srgb, var(--alert-color) 58%, transparent);
 }
 
 .alert-columns > section {
@@ -60,12 +64,12 @@
 }
 
 .alert-columns > section + section {
-  border-left: 1px dotted color-mix(in srgb, var(--status-act-now) 58%, transparent);
+  border-left: 1px dotted color-mix(in srgb, var(--alert-color) 58%, transparent);
 }
 
 .alert-columns h2 {
   margin: 0 0 22px;
-  color: var(--status-act-now);
+  color: var(--alert-color);
   font-size: clamp(20px, 2.5vw, 30px);
   font-weight: 400;
 }
@@ -109,5 +113,5 @@
 
 @media (max-width: 700px) {
   .alert-columns { grid-template-columns: 1fr; }
-  .alert-columns > section + section { border-top: 1px dotted color-mix(in srgb, var(--status-act-now) 58%, transparent); border-left: 0; }
+  .alert-columns > section + section { border-top: 1px dotted color-mix(in srgb, var(--alert-color) 58%, transparent); border-left: 0; }
 }

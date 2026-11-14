@@ -45,9 +45,6 @@ const Shell: FC = () => {
                   <Link to="/demo" className="text-slate-300 hover:text-white transition-colors">
                     Demo Mode
                   </Link>
-                  <Link to="/cosmos" className="text-slate-300 hover:text-white transition-colors">
-                    Cosmos
-                  </Link>
                 </nav>
               </div>
               <div className="hidden sm:block text-xs font-mono text-slate-400">
