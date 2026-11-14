@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # VitalOrbit
 
 > **Autonomous Crew Health Guardian for Long-Duration Moon and Mars Missions**  
