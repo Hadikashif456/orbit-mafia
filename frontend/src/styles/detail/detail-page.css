@@ -1,0 +1,65 @@
+.detail-screen {
+  height: calc(100dvh - var(--header-h));
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--page-padding-y) var(--page-padding-x);
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--card-gap);
+  width: min(100%, 1800px);
+  height: 100%;
+  margin-inline: auto;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 28px);
+  min-width: 0;
+}
+
+.detail-title-row .detail-eyebrow { margin-right: auto; }
+.detail-back-link { color: var(--stardust-lavender); font-size: 13px; text-decoration: none; }
+.detail-back-link:hover { color: var(--supernova-white); }
+
+.detail-content-grid {
+  display: grid;
+  grid-template-columns: var(--detail-columns);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "profile graph info";
+  gap: var(--card-gap);
+  min-height: 0;
+}
+
+.detail-content-grid > * { min-height: 0; }
+.detail-content-grid > .detail-profile-panel { grid-area: profile; }
+.detail-content-grid > .detail-chart-panel { grid-area: graph; }
+.detail-content-grid > .detail-info-panel { grid-area: info; }
+.detail-mobile-panel,
+.detail-tabs { display: none; }
+
+@media (min-width: 1920px) {
+  .detail-title-row { font-size: 1.05rem; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .detail-content-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 45fr) minmax(0, 55fr);
+    grid-template-areas: "profile info" "graph graph";
+  }
+}
+
+@media (max-width: 767px) {
+  .detail-screen { padding: 12px var(--page-padding-x) 16px; }
+  .detail-layout { grid-template-rows: auto auto minmax(0, 1fr); gap: 10px; }
+  .detail-title-row { flex-wrap: wrap; gap: 6px 12px; }
+  .detail-title-row .detail-eyebrow { flex-basis: 100%; }
+  .detail-content-grid { display: none; }
+  .detail-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .detail-mobile-panel { display: block; min-height: 0; overflow: auto; }
+  .detail-mobile-panel > * { height: 100%; min-height: 0; }
+}

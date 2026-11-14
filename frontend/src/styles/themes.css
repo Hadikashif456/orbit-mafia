@@ -1,0 +1,21 @@
+:root {
+  --event-horizon: #03020a;
+  --midnight-indigo: #11102a;
+  --deep-amethyst: #543078;
+  --electric-orchid: #b56cff;
+  --stardust-lavender: #d9b8ff;
+  --cosmic-rose: #f4a4cf;
+  --glacial-cyan: #83e7f5;
+  --champagne-gold: #ffe0a3;
+  --supernova-white: #f8f4ff;
+  --status-act-now: #ff5d73;
+  --status-watch: #ffe0a3;
+  --status-stable: #83e7f5;
+  --status-optimal: #7cf5b0;
+  --chart-cri: #f8f4ff;
+  --chart-sleep: #83e7f5;
+  --chart-cardio: #b56cff;
+  --chart-radiation: #ffe0a3;
+  --chart-exercise: #7cf5b0;
+  --chart-mood: #f4a4cf;
+}

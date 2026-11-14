@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
+import { CrewBoardPage } from './pages/CrewBoardPage';
 import { AstronautDetail } from './pages/AstronautDetail';
 import { DemoMode } from './pages/DemoMode';
 import { CosmosProvider } from './cosmos/CosmosContext';

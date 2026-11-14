@@ -1,0 +1,11 @@
+.detail-tabs button {
+  min-height: 44px;
+  padding: 7px 10px;
+  color: var(--stardust-lavender);
+  font: 11px "JetBrains Mono", Menlo, Consolas, monospace;
+  background: rgba(var(--glass-body-rgb), 0.45);
+  border: 1px solid rgba(217,184,255,0.2);
+  border-radius: 8px;
+}
+.detail-tabs button[aria-selected="true"] { color: var(--supernova-white); border-color: var(--glacial-cyan); }
+.detail-tabs button:focus-visible { outline: 2px solid var(--glacial-cyan); outline-offset: 2px; }

@@ -1,0 +1,18 @@
+:root {
+  --header-h: 6.5rem;
+  --detail-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1.1fr);
+  --card-gap: clamp(16px, 2vw, 28px);
+  --page-padding-x: clamp(16px, 4vw, 64px);
+  --page-padding-y: clamp(20px, 4vh, 48px);
+  --card-radius: 16px;
+  --card-padding: clamp(16px, 2vw, 24px);
+  --card-border-width: 1px;
+  --glass-body-rgb: 3, 2, 10;
+  --glass-tint: 0.14;
+  --glass-blur: 3px;
+  --glass-saturate: 130%;
+  --glass-scrim: 0.45;
+  --color-text-primary: var(--supernova-white);
+  --color-text-secondary: var(--stardust-lavender);
+  --text-shadow-soft: 0 1px 8px rgba(3, 2, 10, 0.9);
+}
