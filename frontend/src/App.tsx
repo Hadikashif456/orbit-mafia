@@ -27,7 +27,7 @@ const Shell: FC = () => {
             <div className="container mx-auto flex items-center justify-between">
               <div className="flex items-center gap-6">
                 <Link to="/" className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                  <span className="text-cyan-400">Vital</span>Orbit
+                  <span className="text-cyan-400">Orbit</span> Mafia
                 </Link>
                 <nav className="flex items-center gap-4 text-sm font-medium">
                   <NavLink
