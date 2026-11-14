@@ -5,7 +5,7 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
-  overflow: auto;
+  overflow: hidden;
   padding: clamp(14px, 2cqi, 28px);
   background: rgba(var(--glass-body-rgb), var(--glass-tint));
   border: 1px solid color-mix(in srgb, var(--panel-status-color, var(--stardust-lavender)) 40%, transparent);
@@ -23,40 +23,33 @@
 .detail-panel--green,
 .detail-status--green { --panel-status-color: var(--status-optimal); }
 
-.detail-avatar {
-  display: grid;
-  place-content: center;
-  aspect-ratio: 1;
-  width: min(100%, 28cqh);
-  max-height: 28%;
-  margin: 0 auto clamp(8px, 2cqh, 18px);
-  color: var(--glacial-cyan);
-  font: clamp(10px, 2cqi, 18px) "JetBrains Mono", Menlo, Consolas, monospace;
-  text-align: center;
-  text-shadow: 0 0 12px var(--glacial-cyan);
-}
-
 .detail-profile-copy h2,
 .detail-profile-copy p { margin: 4px 0; }
-.detail-profile-copy h2 { color: var(--supernova-white); font-size: clamp(18px, 3cqi, 28px); }
-.detail-profile-copy p { color: var(--stardust-lavender); font-size: clamp(12px, 1.5cqi, 15px); }
-.detail-code { color: var(--stardust-lavender); font: 11px "JetBrains Mono", Menlo, Consolas, monospace; }
+.detail-profile-copy h2 { color: var(--supernova-white); font-size: clamp(20px, 3.8cqi, 32px); }
+.detail-profile-copy p { color: var(--stardust-lavender); font-size: clamp(13px, 1.7cqi, 16px); }
 
-.detail-cri { display: grid; gap: 4px; margin-block: clamp(10px, 2cqh, 20px); }
-.detail-cri > span:first-child { color: var(--stardust-lavender); font: 11px "JetBrains Mono", Menlo, Consolas, monospace; text-transform: uppercase; }
-.detail-cri strong { color: var(--supernova-white); font-size: clamp(42px, 8cqi, 68px); font-weight: 300; line-height: 0.9; }
+.detail-cri { display: grid; gap: clamp(3px, 0.6cqh, 6px); margin-block: clamp(8px, 1.4cqh, 16px); }
+.detail-cri-summary { display: flex; align-items: baseline; gap: clamp(5px, 0.8cqi, 10px); }
+.detail-cri-label { color: var(--stardust-lavender); font: clamp(11px, 1.2cqi, 13px) "JetBrains Mono", Menlo, Consolas, monospace; text-transform: uppercase; }
+.detail-cri strong { color: var(--supernova-white); font-size: clamp(42px, 7cqi, 64px); font-weight: 300; line-height: 0.9; }
+.detail-band { display: inline-flex; align-items: center; gap: 5px; font-size: clamp(11px, 1.2cqi, 14px); }
 .detail-cri small { color: var(--stardust-lavender); font: 11px "JetBrains Mono", Menlo, Consolas, monospace; }
-.detail-cri-bar { height: 4px; margin: 7px 0; overflow: hidden; background: rgba(217,184,255,0.16); border-radius: 99px; }
+.detail-cri-bar { height: 4px; overflow: hidden; background: var(--detail-track-color); border-radius: 99px; }
 .detail-cri-bar span { display: block; height: 100%; background: var(--panel-status-color); border-radius: inherit; }
 
-.detail-input-bars { display: grid; gap: clamp(7px, 1.5cqh, 13px); margin-top: auto; }
-.detail-input { color: var(--stardust-lavender); font-size: clamp(11px, 1.3cqi, 13px); }
-.detail-input-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
-.detail-input-head strong { color: var(--supernova-white); font: 11px "JetBrains Mono", Menlo, Consolas, monospace; }
-.detail-input-track { height: 4px; background: rgba(217,184,255,0.15); border-radius: 99px; }
+.detail-profile-panel { min-height: 0; }
+.detail-input-bars { display: flex; min-height: 0; flex: 1; flex-direction: column; gap: clamp(2px, 0.55cqh, 6px); margin-top: auto; }
+.detail-input { display: flex; min-height: 0; flex: 1; flex-direction: column; justify-content: center; color: var(--stardust-lavender); font-size: clamp(11px, 1.4cqi, 14px); }
+.detail-input-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: clamp(2px, 0.5cqh, 4px); }
+.detail-input-head strong { color: var(--supernova-white); font: 12px "JetBrains Mono", Menlo, Consolas, monospace; }
+.detail-input-track { width: 100%; height: 6px; background: var(--detail-track-color); border-radius: 99px; }
 .detail-input-track span { display: block; height: 100%; background: var(--glacial-cyan); border-radius: inherit; }
 
 @supports not (backdrop-filter: blur(1px)) {
   .detail-panel,
   .detail-info-panel { background: rgba(var(--glass-body-rgb), 0.45); }
 }
+
+.detail-panel--green { --detail-track-color: color-mix(in srgb, var(--status-optimal) 18%, transparent); }
+.detail-panel--amber { --detail-track-color: color-mix(in srgb, var(--status-watch) 18%, transparent); }
+.detail-panel--red { --detail-track-color: color-mix(in srgb, var(--status-act-now) 18%, transparent); }

@@ -25,3 +25,20 @@ export interface DailyRow {
   cri: number;
   band: string;
 }
+
+export type DetailBand = 'Green' | 'Amber' | 'Red';
+
+export interface DetailSnapshot {
+  id: string;
+  name: string;
+  role: string;
+  cri: number;
+  band: DetailBand;
+  sleep: number;
+  cardio: number;
+  radiation: number;
+  exercise: number;
+  mood: number;
+  trend: readonly number[];
+  data_label: string;
+}

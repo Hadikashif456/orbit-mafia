@@ -1,18 +1,16 @@
-import { useMemo, useState, type FC } from 'react';
-import type { AstronautSnapshot } from '../../types/astronaut';
-import { buildSeries } from '../../api/trendAdapter';
+import { useState, type FC } from 'react';
+import type { DailyRow, DetailBand } from '../../types/astronaut';
+import { DetailChart } from './DetailChart';
 import { RangeToggle, type ChartRange } from './RangeToggle';
-import { SolCompare } from './SolCompare';
-import { TrendChart } from './TrendChart';
 
 interface InputsChartProps {
-  snapshot: AstronautSnapshot;
-  trendResponse: unknown;
+  rows: DailyRow[];
+  band: DetailBand;
+  dataLabel: string;
 }
 
-export const InputsChart: FC<InputsChartProps> = ({ snapshot, trendResponse }) => {
+export const InputsChart: FC<InputsChartProps> = ({ rows, band, dataLabel }) => {
   const [range, setRange] = useState<ChartRange>('sol30');
-  const chart = useMemo(() => buildSeries(snapshot, trendResponse), [snapshot, trendResponse]);
 
   return (
     <section className="detail-panel detail-chart-panel" aria-labelledby="trend-heading">
@@ -23,17 +21,10 @@ export const InputsChart: FC<InputsChartProps> = ({ snapshot, trendResponse }) =
         </div>
         <RangeToggle value={range} onChange={setRange} />
       </div>
-      {range === 'sol30' ? (
-        <TrendChart
-          series={chart.series}
-          range={range}
-          ariaSummary={`Daily resilience chart with ${chart.series.length} series`}
-          thresholds={[60, 75]}
-          syntheticLabel="Synthetic demo data"
-        />
-      ) : (
-        <SolCompare series={chart.series} />
-      )}
+      <div className="detail-chart-topline">
+        <span className="synthetic-chip">{dataLabel}</span>
+      </div>
+      <DetailChart rows={rows} range={range} bandColorVar={`--status-${band === 'Green' ? 'optimal' : band === 'Amber' ? 'watch' : 'act-now'}`} />
     </section>
   );
 };

@@ -1,8 +1,8 @@
 import type { FC } from 'react';
-import type { AstronautSnapshot } from '../../types/astronaut';
+import type { DetailSnapshot } from '../../types/astronaut';
 
 interface InputBarsProps {
-  snapshot: AstronautSnapshot;
+  snapshot: DetailSnapshot;
 }
 
 const INPUTS = [
