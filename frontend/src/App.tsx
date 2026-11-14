@@ -4,11 +4,17 @@ import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { AstronautDetail } from './pages/AstronautDetail';
 import { DemoMode } from './pages/DemoMode';
+import { CosmosProvider } from './cosmos/CosmosContext';
+import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
+import { CosmicSceneSwitcher } from './cosmos/CosmicSceneSwitcher';
 
 export const App: FC = () => {
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100">
+      <CosmosProvider>
+      {/* Animated ASCII universe behind every view; never takes pointer events */}
+      <CosmicBackdrop />
+      <div className="relative z-10 min-h-screen flex flex-col text-slate-100">
         {/* Mandatory safety disclaimer on every view */}
         <DisclaimerBar />
 
@@ -29,9 +35,12 @@ export const App: FC = () => {
                 <Link to="/demo" className="text-slate-300 hover:text-white transition-colors">
                   Demo Mode
                 </Link>
+                <Link to="/cosmos" className="text-slate-300 hover:text-white transition-colors">
+                  Cosmos
+                </Link>
               </nav>
             </div>
-            <div className="text-xs font-mono text-slate-400">
+            <div className="hidden sm:block text-xs font-mono text-slate-400">
               MISSION SOL 144
             </div>
           </div>
@@ -43,9 +52,11 @@ export const App: FC = () => {
             <Route path="/" element={<CrewBoard />} />
             <Route path="/crew/:id" element={<AstronautDetail />} />
             <Route path="/demo" element={<DemoMode />} />
+            <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
           </Routes>
         </main>
       </div>
+      </CosmosProvider>
     </BrowserRouter>
   );
 };
