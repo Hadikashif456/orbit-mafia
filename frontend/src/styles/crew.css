@@ -81,6 +81,11 @@
   transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
 }
 
+.crew-card.status-act_now { --status-color: var(--status-act-now); }
+.crew-card.status-watch { --status-color: var(--status-watch); }
+.crew-card.status-stable { --status-color: var(--status-stable); }
+.crew-card.status-optimal { --status-color: var(--status-optimal); }
+
 .crew-card::before {
   position: absolute;
   inset: 0;

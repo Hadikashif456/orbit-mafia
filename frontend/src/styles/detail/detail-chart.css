@@ -18,6 +18,23 @@
   font-weight: 300;
 }
 
+.detail-range-toggle { display: flex; gap: 6px; }
+.detail-range-toggle button {
+  padding: 5px 9px;
+  color: var(--stardust-lavender);
+  font: 11px "JetBrains Mono", Menlo, Consolas, monospace;
+  background: color-mix(in srgb, var(--event-horizon) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--stardust-lavender) 35%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.detail-range-toggle button[aria-pressed="true"] {
+  color: var(--supernova-white);
+  background: color-mix(in srgb, var(--glacial-cyan) 14%, transparent);
+  border-color: var(--glacial-cyan);
+}
+.detail-range-toggle button:focus-visible { outline: 2px solid var(--glacial-cyan); outline-offset: 2px; }
+
 .detail-chart-shell {
   position: relative;
   display: flex;
@@ -59,17 +76,13 @@
   overflow: visible;
 }
 
-.chart-axis { stroke: rgba(217,184,255,0.26); stroke-width: 1; }
+.chart-latest-dot { fill: var(--detail-chart-color); stroke: var(--supernova-white); stroke-width: 1.5; filter: drop-shadow(0 0 5px var(--detail-chart-color)); }
+.chart-axis { stroke: color-mix(in srgb, var(--stardust-lavender) 26%, transparent); stroke-width: 1; }
 .chart-axis-label { fill: var(--stardust-lavender); font: 10px "JetBrains Mono", Menlo, Consolas, monospace; opacity: 0.8; }
-.chart-threshold { stroke: rgba(217,184,255,0.22); stroke-dasharray: 4 5; }
-.chart-line { fill: none; stroke: var(--series-color); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0.86; }
+.chart-threshold { stroke: color-mix(in srgb, var(--stardust-lavender) 22%, transparent); stroke-dasharray: 4 5; }
+.chart-line { fill: none; stroke: var(--series-color); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; cursor: help; opacity: 0.86; pointer-events: stroke; }
 .chart-line.is-emphasis { stroke-width: 4; opacity: 1; filter: drop-shadow(0 0 4px var(--series-color)); }
-.chart-latest circle { fill: var(--series-color); stroke: var(--supernova-white); stroke-width: 1.5; filter: drop-shadow(0 0 5px var(--series-color)); }
-.chart-latest text { fill: var(--series-color); font: 11px "JetBrains Mono", Menlo, Consolas, monospace; }
 .chart-hit-area { fill: transparent; cursor: crosshair; }
-.chart-hover-line { stroke: var(--glacial-cyan); stroke-dasharray: 3 4; }
-.chart-tooltip { position: absolute; top: 34px; transform: translateX(-50%); display: grid; gap: 3px; min-width: 120px; padding: 8px; color: var(--supernova-white); font: 11px "JetBrains Mono", Menlo, Consolas, monospace; background: rgba(3,2,10,0.9); border: 1px solid rgba(131,231,245,0.4); border-radius: 8px; pointer-events: none; }
-.chart-tooltip span { color: var(--stardust-lavender); }
 
 .sol-compare { position: relative; display: grid; min-height: 0; flex: 1; align-content: center; gap: 16px; padding-top: 34px; }
 .sol-compare-head { position: absolute; top: 8px; right: 0; left: 0; display: grid; grid-template-columns: minmax(80px, 1fr) 1fr 1fr; color: var(--stardust-lavender); font: 10px "JetBrains Mono", Menlo, Consolas, monospace; text-align: center; }

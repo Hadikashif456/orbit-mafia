@@ -1,31 +1,46 @@
-import { useState, type FC } from 'react';
+import { useEffect, useState, type FC } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { InputsChart } from '../components/detail/InputsChart';
-import { CriBreakdown } from '../components/detail/CriBreakdown';
+import { GlassSwitcher, type GlassVariant } from '../components/GlassSwitcher';
 import { ProfilePanel } from '../components/detail/ProfilePanel';
 import { StatusCard } from '../components/detail/StatusCard';
+// Temporary scene fallback: change only DREAMSCAPE to ASTRONAUT when it is registered.
+//import { DREAMSCAPE as DETAIL_SCENE } from '../cosmos/scenes';
+import { ASTRONAUT as DETAIL_SCENE } from '../cosmos/scenes';
+import { useCosmos } from '../cosmos/CosmosContext';
 import { useAstronaut } from '../hooks/useAstronaut';
 
 type DetailTab = 'profile' | 'graph' | 'status';
 
 export const AstronautDetail: FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { snapshot, trendResponse, loading, error } = useAstronaut(id);
+  const { scene, setScene } = useCosmos();
+  const { snapshot, rows, loading, error } = useAstronaut(id);
   const [tab, setTab] = useState<DetailTab>('status');
+  const [glass, setGlass] = useState<GlassVariant>(() => {
+    if (typeof window === 'undefined') return 'clear';
+    const saved = window.localStorage.getItem('vital-orbit-glass');
+    return saved === 'frosted' || saved === 'liquid' ? saved : 'clear';
+  });
+
+  useEffect(() => {
+    const previousScene = scene;
+    setScene(DETAIL_SCENE.id);
+    return () => setScene(previousScene);
+  }, [setScene]);
 
   if (loading) return <main className="detail-screen"><p className="detail-role">Loading astronaut telemetry...</p></main>;
   if (error || !snapshot) return <main className="detail-screen"><p className="detail-role">{error ?? 'Astronaut data is unavailable.'}</p></main>;
 
-  const activeTab = snapshot.status === 'optimal' || snapshot.status === 'stable' ? (tab === 'status' ? 'profile' : tab) : tab;
+  const activeTab = snapshot.band === 'Green' ? (tab === 'status' ? 'profile' : tab) : tab;
   const setActiveTab = (next: DetailTab): void => setTab(next);
 
   return (
-    <main className="detail-screen" data-glass="clear">
+    <main className="detail-screen" data-glass={glass}>
       <div className="detail-layout">
         <header className="detail-title-row">
           <span className="detail-eyebrow">Mission Sol 144 / Astronaut Detail</span>
           <Link to="/crew" className="detail-back-link">Back to Crew Board</Link>
-          <span className="synthetic-chip">Synthetic demo data</span>
         </header>
         <div className="detail-tabs" role="tablist" aria-label="Astronaut detail sections">
           {(['profile', 'graph', 'status'] as const).map((item) => (
@@ -36,18 +51,18 @@ export const AstronautDetail: FC = () => {
         </div>
         <div className="detail-content-grid">
           <ProfilePanel snapshot={snapshot} />
-          <InputsChart snapshot={snapshot} trendResponse={trendResponse} />
+          <InputsChart rows={rows} band={snapshot.band} dataLabel={snapshot.data_label} />
           <aside className="detail-info-panel">
-            <CriBreakdown snapshot={snapshot} compact />
             <StatusCard snapshot={snapshot} />
           </aside>
         </div>
         <div className={`detail-mobile-panel detail-mobile-panel--${activeTab}`}>
           {activeTab === 'profile' && <ProfilePanel snapshot={snapshot} />}
-          {activeTab === 'graph' && <InputsChart snapshot={snapshot} trendResponse={trendResponse} />}
-          {activeTab === 'status' && <aside className="detail-info-panel"><CriBreakdown snapshot={snapshot} compact /><StatusCard snapshot={snapshot} /></aside>}
+          {activeTab === 'graph' && <InputsChart rows={rows} band={snapshot.band} dataLabel={snapshot.data_label} />}
+          {activeTab === 'status' && <aside className="detail-info-panel"><StatusCard snapshot={snapshot} /></aside>}
         </div>
       </div>
+      <GlassSwitcher value={glass} onChange={setGlass} />
     </main>
   );
 };
