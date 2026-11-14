@@ -14,6 +14,7 @@ Tests enforce docs/TRD.md Section 8 and docs/SECURITY.md Section 7:
 - Strict input validation (extra="forbid", regex ^C00[1-4]$, sol 1-200)
 """
 
+import asyncio
 import json
 import logging
 from unittest.mock import AsyncMock, patch
@@ -29,16 +30,19 @@ from app.services.copilot_service import (
     explain_risk,
     _lookup_file_cache,
     _build_templated_response,
+    DISCLAIMER_TEXT,
 )
 from app.services.knowledge import top_k
 
 
 @pytest.fixture(autouse=True)
-def reset_copilot_cache(monkeypatch):
+def reset_copilot_cache(monkeypatch, request):
     """Ensure in-memory cache is clean and file cache defaults to non-existent for mock unit tests."""
     clear_cache()
-    # Ensure live mock tests are not bypassed by on-disk cache file
-    monkeypatch.setattr("app.services.copilot_service.DEFAULT_CACHE_PATH", "nonexistent_copilot_cache.json")
+    # Mock unit tests bypass on-disk cache so they test Groq call/fallback logic.
+    # Router integration tests use the real cache from conftest.py.
+    if request.node.name != "test_copilot_router_headers_and_validation":
+        monkeypatch.setattr("app.services.copilot_service.DEFAULT_CACHE_PATH", "nonexistent_copilot_cache.json")
     yield
     clear_cache()
 
@@ -340,8 +344,14 @@ async def test_truncated_output_finish_reason_length_falls_back(monkeypatch):
         assert result.mode == "cached"
 
 
-def test_copilot_router_headers_and_validation(test_client: TestClient):
+def test_copilot_router_headers_and_validation(test_client: TestClient, monkeypatch):
     """Integration test: POST /api/v1/copilot/explain enforces headers, validations, and extra='forbid'."""
+    import os
+    real_cache_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "knowledge", "copilot_cache.json")
+    )
+    monkeypatch.setattr("app.services.copilot_service.DEFAULT_CACHE_PATH", real_cache_path)
+    monkeypatch.setattr(settings, "GROQ_API_KEY", None)
     # 1. Valid request receives HTTP 200 and Cache-Control: no-store
     valid_payload = {"crewId": "C002", "sol": 144}
     res = test_client.post("/api/v1/copilot/explain", json=valid_payload)
@@ -349,7 +359,7 @@ def test_copilot_router_headers_and_validation(test_client: TestClient):
     assert res.headers.get("Cache-Control") == "no-store"
     data = res.json()
     assert data["mode"] == "cached"
-    assert "disclaimer" in data
+    assert data["disclaimer"] == DISCLAIMER_TEXT
 
     # 2. Unknown extra field is rejected with HTTP 422 (extra="forbid")
     extra_payload = {"crewId": "C002", "sol": 144, "freeText": "diagnose me"}
@@ -390,23 +400,53 @@ async def test_empty_suggested_actions_falls_back(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_forbidden_phrase_in_disclaimer_falls_back(monkeypatch):
-    """Verifies that a forbidden diagnostic phrase inside disclaimer triggers safety rejection and falls back."""
+async def test_real_cache_file_all_24_entries_return_exact_disclaimer(monkeypatch):
+    """Test 4(a): For all 24 keys C001-C004 x Sol 140-145 in the real cache file, the returned disclaimer equals DISCLAIMER_TEXT exactly."""
+    import os
+    real_cache_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "knowledge", "copilot_cache.json")
+    )
+    assert os.path.exists(real_cache_path), f"Cache file not found at {real_cache_path}"
+    monkeypatch.setattr("app.services.copilot_service.DEFAULT_CACHE_PATH", real_cache_path)
+
+    crew_ids = ["C001", "C002", "C003", "C004"]
+    sols = [140, 141, 142, 143, 144, 145]
+    verified_count = 0
+
+    for crew_id in crew_ids:
+        for sol in sols:
+            cache_entry = _lookup_file_cache(crew_id, sol, cache_path=real_cache_path)
+            assert cache_entry is not None, f"Missing cache entry for {crew_id}:{sol}"
+            assert cache_entry.disclaimer == DISCLAIMER_TEXT, f"Direct cache hit disclaimer mismatch for {crew_id}:{sol}"
+
+            clear_cache()
+            req = CopilotRequest(crewId=crew_id, sol=sol)
+            res = await explain_risk(req)
+            assert res.mode == "cached"
+            assert res.disclaimer == DISCLAIMER_TEXT, f"explain_risk disclaimer mismatch for {crew_id}:{sol}"
+            verified_count += 1
+
+    assert verified_count == 24
+
+
+@pytest.mark.asyncio
+async def test_live_mode_mocked_answer_advisory_only_disclaimer_overwritten(monkeypatch):
+    """Test 4(b): A live-mode mocked answer whose disclaimer is 'advisory only' still returns DISCLAIMER_TEXT."""
     monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_mock_valid_api_key_test_value")
     snippets = top_k(["radiation"], k=1)
     valid_source = snippets[0]["source"] if snippets else "NASA HRP: Guidelines"
 
     payload = {
-        "summary": "Operational note.",
-        "drivers": ["Fatigue"],
+        "summary": "Autonomous physiological review indicates elevated ambient radiation.",
+        "drivers": ["Elevated ambient radiation exposure"],
         "suggestedActions": [
             {
-                "title": "Rest",
-                "protocol": "Rest well",
+                "title": "Radiation Monitoring",
+                "protocol": "Monitor personal dosimeters and observe shelter guidelines.",
                 "source": valid_source,
             }
         ],
-        "disclaimer": "Diagnostic result: you are suffering from fatigue.",
+        "disclaimer": "advisory only",
     }
     mock_resp = make_groq_response(payload)
 
@@ -415,8 +455,52 @@ async def test_forbidden_phrase_in_disclaimer_falls_back(monkeypatch):
         req = CopilotRequest(crewId="C002", sol=144)
         result = await explain_risk(req)
 
-        assert result.mode == "cached"
-        assert "you are suffering" not in result.disclaimer.lower()
+        assert mock_post.called
+        assert result.mode == "live"
+        assert result.disclaimer == DISCLAIMER_TEXT
+
+
+@pytest.mark.asyncio
+async def test_mocked_answer_with_diagnos_only_in_disclaimer_accepted(monkeypatch):
+    """Test 4(c): A mocked answer whose ONLY occurrence of 'diagnos' is the disclaimer is accepted."""
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_mock_valid_api_key_test_value")
+    snippets = top_k(["radiation"], k=1)
+    valid_source = snippets[0]["source"] if snippets else "NASA HRP: Guidelines"
+
+    payload = {
+        "summary": "Autonomous physiological review indicates elevated ambient radiation.",
+        "drivers": ["Elevated ambient radiation exposure"],
+        "suggestedActions": [
+            {
+                "title": "Radiation Monitoring",
+                "protocol": "Monitor personal dosimeters and observe shelter guidelines.",
+                "source": valid_source,
+            }
+        ],
+        "disclaimer": "Diagnostic result: consult flight surgeon for official diagnosis.",
+    }
+    mock_resp = make_groq_response(payload)
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        req = CopilotRequest(crewId="C002", sol=144)
+        result = await explain_risk(req)
+
+        assert mock_post.called
+        assert result.mode == "live"
+        assert result.disclaimer == DISCLAIMER_TEXT
+
+
+def test_templated_fallback_carries_exact_disclaimer():
+    """Test 4(d): The templated fallback carries the exact disclaimer."""
+    snippets = top_k(["radiation"], k=1)
+    resp = _build_templated_response(
+        crew_id="C002",
+        sol=144,
+        drivers=["Elevated radiation"],
+        snippets=snippets,
+    )
+    assert resp.disclaimer == DISCLAIMER_TEXT
 
 
 @pytest.mark.asyncio
@@ -573,5 +657,154 @@ def test_chunked_or_missing_content_length_over_1kb_rejected(test_client: TestCl
     )
     assert res.status_code == 422
     assert "1 KB" in res.json().get("error", {}).get("message", "")
+
+
+@pytest.mark.asyncio
+async def test_100_concurrent_requests_never_exceed_max_concurrent_groq_calls(monkeypatch):
+    """Test requirement: 100 concurrent requests never exceed GROQ_MAX_CONCURRENT simultaneous Groq calls (instrument the mock)."""
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_mock_valid_api_key_test_value")
+    monkeypatch.setattr("app.services.copilot_service.DEFAULT_CACHE_PATH", "nonexistent_copilot_cache.json")
+    clear_cache()
+
+    snippets = top_k(["radiation"], k=1)
+    valid_source = snippets[0]["source"] if snippets else "NASA HRP: Guidelines"
+
+    def make_dynamic_response(request_json: dict) -> httpx.Response:
+        user_content = request_json.get("messages", [{}])[-1].get("content", "")
+        # Extract the valid source from prompt context to pass safety filter
+        valid_src = valid_source
+        for line in user_content.splitlines():
+            line_str = line.strip()
+            if line_str.startswith("Source:"):
+                valid_src = line_str.split("Source:", 1)[1].strip()
+                break
+
+        payload = {
+            "summary": "Physiological baseline variance observed.",
+            "drivers": ["Elevated ambient radiation exposure"],
+            "suggestedActions": [
+                {
+                    "title": "Countermeasure protocol",
+                    "protocol": "Observe recommended mitigation protocol.",
+                    "source": valid_src,
+                }
+            ],
+            "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
+        }
+        return make_groq_response(payload)
+
+    current_concurrent = 0
+    max_concurrent = 0
+
+    async def instrumented_post(*args, **kwargs):
+        nonlocal current_concurrent, max_concurrent
+        current_concurrent += 1
+        if current_concurrent > max_concurrent:
+            max_concurrent = current_concurrent
+        # Yield to event loop to simulate network latency allowing concurrent overlap
+        await asyncio.sleep(0.01)
+        current_concurrent -= 1
+        req_json = kwargs.get("json", {})
+        return make_dynamic_response(req_json)
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_patch:
+        mock_patch.side_effect = instrumented_post
+
+        # Fire 100 concurrent requests across distinct sols
+        tasks = [
+            explain_risk(CopilotRequest(crewId="C001", sol=(i % 100) + 1))
+            for i in range(100)
+        ]
+        results = await asyncio.gather(*tasks)
+
+        # 1. Invariant: Simultaneous active calls never exceed GROQ_MAX_CONCURRENT (3)
+        assert max_concurrent <= settings.GROQ_MAX_CONCURRENT
+        assert max_concurrent > 0
+
+        # 2. Invariant: All 100 requests return a valid CopilotResponse with DISCLAIMER_TEXT
+        assert len(results) == 100
+        for res in results:
+            assert isinstance(res, CopilotResponse)
+            assert res.disclaimer == DISCLAIMER_TEXT
+            assert res.mode in ("live", "cached")
+
+
+@pytest.mark.asyncio
+async def test_after_groq_live_max_per_hour_next_request_makes_zero_groq_calls(monkeypatch):
+    """Test requirement: After GROQ_LIVE_MAX_PER_HOUR live calls, the next request makes zero Groq calls and returns mode='cached' with 200."""
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_mock_valid_api_key_test_value")
+    monkeypatch.setattr("app.services.copilot_service.DEFAULT_CACHE_PATH", "nonexistent_copilot_cache.json")
+    clear_cache()
+
+    snippets = top_k(["radiation"], k=1)
+    valid_source = snippets[0]["source"] if snippets else "NASA HRP: Guidelines"
+
+    def make_dynamic_response(request_json: dict) -> httpx.Response:
+        user_content = request_json.get("messages", [{}])[-1].get("content", "")
+        valid_src = valid_source
+        for line in user_content.splitlines():
+            line_str = line.strip()
+            if line_str.startswith("Source:"):
+                valid_src = line_str.split("Source:", 1)[1].strip()
+                break
+
+        payload = {
+            "summary": "Nominal telemetry review.",
+            "drivers": ["Elevated ambient radiation exposure"],
+            "suggestedActions": [
+                {
+                    "title": "Countermeasure protocol",
+                    "protocol": "Observe recommended mitigation protocol.",
+                    "source": valid_src,
+                }
+            ],
+            "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
+        }
+        return make_groq_response(payload)
+
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.side_effect = lambda *args, **kwargs: make_dynamic_response(kwargs.get("json", {}))
+
+        # Execute exactly GROQ_LIVE_MAX_PER_HOUR live calls across distinct sols
+        limit = settings.GROQ_LIVE_MAX_PER_HOUR
+        for i in range(1, limit + 1):
+            req = CopilotRequest(crewId="C001", sol=i)
+            res = await explain_risk(req)
+            assert res.mode == "live"
+
+        assert mock_post.call_count == limit
+
+        # The (limit + 1)-th call must make ZERO additional Groq calls and return mode='cached'
+        next_req = CopilotRequest(crewId="C001", sol=limit + 1)
+        next_res = await explain_risk(next_req)
+
+        assert mock_post.call_count == limit  # Zero additional Groq calls made
+        assert next_res.mode == "cached"
+        assert next_res.disclaimer == DISCLAIMER_TEXT
+        assert len(next_res.suggestedActions) > 0
+
+
+@pytest.mark.asyncio
+async def test_cached_and_templated_answers_never_consume_live_budget(monkeypatch):
+    """Test requirement: Cached and templated answers must never consume the live-call budget."""
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "gsk_mock_valid_api_key_test_value")
+    clear_cache()
+
+    from app.services.copilot_service import _memory_cache, _sliding_window_budget
+    assert _sliding_window_budget.current_count() == 0
+
+    # 1. Templated response directly generated does not consume budget
+    snippets = top_k(["radiation"], k=1)
+    tmpl_res = _build_templated_response("C002", 144, ["Radiation"], snippets)
+    assert _sliding_window_budget.current_count() == 0
+
+    # 2. Serving from cache does not consume budget
+    _memory_cache[("C002", 144)] = tmpl_res
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        res = await explain_risk(CopilotRequest(crewId="C002", sol=144))
+        assert not mock_post.called
+        assert res.mode == "cached"
+        assert _sliding_window_budget.current_count() == 0
+
 
 

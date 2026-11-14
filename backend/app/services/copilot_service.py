@@ -6,10 +6,13 @@ Enforces strict safety filters (no diagnosis, no pharmaceutical dosing, no 'you 
 Falls back cleanly to cached/templated responses when GROQ_API_KEY is absent, times out, or triggers filter.
 """
 
+import asyncio
+import collections
 import json
 import logging
 import os
 import re
+import threading
 import time
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -22,6 +25,9 @@ from app.services.knowledge import top_k
 from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
 
 logger = logging.getLogger("orbitmafia.copilot")
+
+# Mandatory clinical disclaimer required by PRD FR-3.5 and API_CONTRACT
+DISCLAIMER_TEXT = "Risk flags and suggested countermeasures only. Not a medical diagnosis."
 
 # Regex for pharmaceutical dosing (e.g. 100 mg, 50mcg, 5 ml, 10g)
 DOSE_REGEX = re.compile(r"\b\d+\s?(mg|mcg|ml|g)\b", re.IGNORECASE)
@@ -45,9 +51,76 @@ SYSTEM_PROMPT = (
 _memory_cache: Dict[Tuple[str, int], CopilotResponse] = {}
 
 
+class SlidingWindowBudget:
+    """Thread-safe and async-safe 1-hour sliding-window counter for live outbound Groq calls."""
+
+    def __init__(self, window_seconds: float = 3600.0):
+        self.window_seconds = window_seconds
+        self._timestamps: collections.deque = collections.deque()
+        self._lock = threading.Lock()
+
+    def can_call(self, max_per_hour: int) -> bool:
+        """Checks if a live call can be admitted under max_per_hour without exceeding budget."""
+        now = time.monotonic()
+        with self._lock:
+            cutoff = now - self.window_seconds
+            while self._timestamps and self._timestamps[0] <= cutoff:
+                self._timestamps.popleft()
+            return len(self._timestamps) < max_per_hour
+
+    def record_call(self) -> None:
+        """Records a completed live Groq call timestamp."""
+        now = time.monotonic()
+        with self._lock:
+            self._timestamps.append(now)
+
+    def current_count(self) -> int:
+        """Returns the number of live calls recorded in the current sliding window."""
+        now = time.monotonic()
+        with self._lock:
+            cutoff = now - self.window_seconds
+            while self._timestamps and self._timestamps[0] <= cutoff:
+                self._timestamps.popleft()
+            return len(self._timestamps)
+
+    def clear(self) -> None:
+        """Resets the sliding window counter (useful for test isolation)."""
+        with self._lock:
+            self._timestamps.clear()
+
+
+_sliding_window_budget = SlidingWindowBudget()
+
+# Lazy semaphore bound to the running event loop
+_groq_semaphore: Optional[asyncio.Semaphore] = None
+_groq_semaphore_loop: Optional[asyncio.AbstractEventLoop] = None
+_groq_semaphore_lock = threading.Lock()
+
+
+def _get_groq_semaphore() -> asyncio.Semaphore:
+    """Lazily creates an asyncio.Semaphore sized GROQ_MAX_CONCURRENT on the running event loop."""
+    global _groq_semaphore, _groq_semaphore_loop
+    current_loop = asyncio.get_running_loop()
+    with _groq_semaphore_lock:
+        if _groq_semaphore is None or _groq_semaphore_loop != current_loop:
+            _groq_semaphore = asyncio.Semaphore(settings.GROQ_MAX_CONCURRENT)
+            _groq_semaphore_loop = current_loop
+    return _groq_semaphore
+
+
+def reset_groq_semaphore() -> None:
+    """Resets the lazy semaphore reference (useful for test isolation)."""
+    global _groq_semaphore, _groq_semaphore_loop
+    with _groq_semaphore_lock:
+        _groq_semaphore = None
+        _groq_semaphore_loop = None
+
+
 def clear_cache() -> None:
-    """Clears the in-memory copilot response cache (useful for testing)."""
+    """Clears the in-memory copilot response cache, sliding-window budget, and semaphore."""
     _memory_cache.clear()
+    _sliding_window_budget.clear()
+    reset_groq_semaphore()
 
 
 def is_safe_copilot_response(
@@ -80,13 +153,6 @@ def is_safe_copilot_response(
     for phrase in FORBIDDEN_PHRASES:
         if phrase in combined_text:
             logger.warning("Copilot output rejected by safety filter: matched '%s'", phrase)
-            return False
-
-    # Check disclaimer specifically for other forbidden phrases (e.g. 'you are suffering', 'stop taking')
-    disclaimer_lower = response.disclaimer.lower()
-    for phrase in ["you have", "you are suffering", "stop taking"]:
-        if phrase in disclaimer_lower:
-            logger.warning("Copilot output rejected by safety filter: disclaimer matched '%s'", phrase)
             return False
 
     # 2. Check pharmaceutical dose patterns
@@ -243,7 +309,7 @@ def _lookup_file_cache(crew_id: str, sol: int, cache_path: Optional[str] = None)
         if entry and isinstance(entry, dict):
             entry_copy = dict(entry)
             entry_copy["mode"] = "cached"
-            entry_copy.setdefault("disclaimer", "Risk flags and suggested countermeasures only. Not a medical diagnosis.")
+            entry_copy["disclaimer"] = DISCLAIMER_TEXT
             if "groundedIn" not in entry_copy:
                 entry_copy["groundedIn"] = ["countermeasures.md#cached"]
             return CopilotResponse(**entry_copy)
@@ -291,7 +357,7 @@ def _build_templated_response(
         summary=summary,
         drivers=drivers if drivers else ["Baseline physiological variance"],
         suggestedActions=suggested_actions,
-        disclaimer="Risk flags and suggested countermeasures only. Not a medical diagnosis.",
+        disclaimer=DISCLAIMER_TEXT,
         groundedIn=grounded_in,
         mode="cached",
     )
@@ -302,8 +368,29 @@ async def _call_groq_api(
     user_prompt: str,
     snippets: List[Dict[str, Any]],
 ) -> Optional[CopilotResponse]:
-    """Calls Groq API via httpx.AsyncClient with fallback model retry on 429/5xx/timeout."""
+    """Calls Groq API via httpx.AsyncClient with fallback model retry on 429/5xx/timeout.
+
+    Protected by:
+        - Global sliding-window counter capped at GROQ_LIVE_MAX_PER_HOUR
+        - Concurrency semaphore sized GROQ_MAX_CONCURRENT
+    When either limit is reached, DO NOT call Groq and return None (falling back to cached/templated).
+    """
     if not settings.groq_key_present:
+        return None
+
+    # Check 1: hourly sliding-window limit
+    if not _sliding_window_budget.can_call(settings.GROQ_LIVE_MAX_PER_HOUR):
+        logger.warning(
+            "Live budget exhausted: hourly cap (%d) reached", settings.GROQ_LIVE_MAX_PER_HOUR
+        )
+        return None
+
+    # Check 2: concurrency limit
+    sem = _get_groq_semaphore()
+    if sem.locked():
+        logger.warning(
+            "Live budget exhausted: max concurrent calls (%d) reached", settings.GROQ_MAX_CONCURRENT
+        )
         return None
 
     try:
@@ -315,85 +402,95 @@ async def _call_groq_api(
 
         models_to_try = [settings.GROQ_MODEL, settings.GROQ_FALLBACK_MODEL]
 
-        async with httpx.AsyncClient(timeout=float(settings.GROQ_TIMEOUT_SECONDS)) as client:
-            for idx, model in enumerate(models_to_try):
-                payload = {
-                    "model": model,
-                    "temperature": 0.2,
-                    "max_completion_tokens": 1500,
-                    "reasoning_effort": "low",
-                    "response_format": {"type": "json_object"},
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                }
+        async with sem:
+            # Re-verify hourly limit upon entering semaphore in case concurrent requests claimed remaining slots
+            if not _sliding_window_budget.can_call(settings.GROQ_LIVE_MAX_PER_HOUR):
+                logger.warning(
+                    "Live budget exhausted: hourly cap (%d) reached", settings.GROQ_LIVE_MAX_PER_HOUR
+                )
+                return None
 
-                try:
-                    response = await client.post(api_url, headers=headers, json=payload)
-                except (httpx.TimeoutException, httpx.RequestError) as exc:
-                    logger.warning("Groq call failed for model %s: %s", model, type(exc).__name__)
-                    if idx == 0:
-                        continue  # Retry once with GROQ_FALLBACK_MODEL
-                    return None
+            async with httpx.AsyncClient(timeout=float(settings.GROQ_TIMEOUT_SECONDS)) as client:
+                for idx, model in enumerate(models_to_try):
+                    payload = {
+                        "model": model,
+                        "temperature": 0.2,
+                        "max_completion_tokens": 1500,
+                        "reasoning_effort": "low",
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                    }
 
-                if response.status_code in (429, 500, 502, 503, 504):
-                    logger.warning("Groq returned status %d for model %s", response.status_code, model)
-                    if idx == 0:
-                        continue  # Retry once with GROQ_FALLBACK_MODEL
-                    return None
-                elif response.status_code != 200:
-                    logger.warning("Groq returned non-retryable status %d for model %s", response.status_code, model)
-                    return None
+                    try:
+                        response = await client.post(api_url, headers=headers, json=payload)
+                    except (httpx.TimeoutException, httpx.RequestError) as exc:
+                        logger.warning("Groq call failed for model %s: %s", model, type(exc).__name__)
+                        if idx == 0:
+                            continue  # Retry once with GROQ_FALLBACK_MODEL
+                        return None
 
-                # Parse and validate successful response
-                try:
-                    data = response.json()
-                except Exception as exc:
-                    logger.warning("Failed to parse Groq response JSON: %s", type(exc).__name__)
-                    return None
+                    if response.status_code in (429, 500, 502, 503, 504):
+                        logger.warning("Groq returned status %d for model %s", response.status_code, model)
+                        if idx == 0:
+                            continue  # Retry once with GROQ_FALLBACK_MODEL
+                        return None
+                    elif response.status_code != 200:
+                        logger.warning("Groq returned non-retryable status %d for model %s", response.status_code, model)
+                        return None
 
-                choices = data.get("choices", [])
-                if not choices:
-                    logger.warning("Groq choices list is empty")
-                    return None
+                    # Parse and validate successful response
+                    try:
+                        data = response.json()
+                    except Exception as exc:
+                        logger.warning("Failed to parse Groq response JSON: %s", type(exc).__name__)
+                        return None
 
-                choice = choices[0]
-                if choice.get("finish_reason") == "length":
-                    logger.warning("Groq response truncated with finish_reason='length'")
-                    return None
+                    choices = data.get("choices", [])
+                    if not choices:
+                        logger.warning("Groq choices list is empty")
+                        return None
 
-                message = choice.get("message", {})
-                content = message.get("content", "")
-                if not content:
-                    logger.warning("Groq assistant message content is empty")
-                    return None
+                    choice = choices[0]
+                    if choice.get("finish_reason") == "length":
+                        logger.warning("Groq response truncated with finish_reason='length'")
+                        return None
 
-                try:
-                    parsed = json.loads(content)
-                except Exception as exc:
-                    logger.warning("Groq content is not valid JSON: %s", type(exc).__name__)
-                    return None
+                    message = choice.get("message", {})
+                    content = message.get("content", "")
+                    if not content:
+                        logger.warning("Groq assistant message content is empty")
+                        return None
 
-                # Populate required Pydantic fields
-                if "groundedIn" not in parsed or not isinstance(parsed["groundedIn"], list):
-                    parsed["groundedIn"] = [f"countermeasures.md#{s['id']}" for s in snippets] if snippets else ["countermeasures.md#general"]
-                parsed.setdefault("disclaimer", "Risk flags and suggested countermeasures only. Not a medical diagnosis.")
-                parsed["mode"] = "live"
+                    try:
+                        parsed = json.loads(content)
+                    except Exception as exc:
+                        logger.warning("Groq content is not valid JSON: %s", type(exc).__name__)
+                        return None
 
-                # Validate against Pydantic model
-                try:
-                    copilot_resp = CopilotResponse(**parsed)
-                except Exception as exc:
-                    logger.warning("Pydantic validation failed for Groq response: %s", type(exc).__name__)
-                    return None
+                    # Populate required Pydantic fields
+                    if "groundedIn" not in parsed or not isinstance(parsed["groundedIn"], list):
+                        parsed["groundedIn"] = [f"countermeasures.md#{s['id']}" for s in snippets] if snippets else ["countermeasures.md#general"]
+                    parsed["disclaimer"] = DISCLAIMER_TEXT
+                    parsed["mode"] = "live"
 
-                # Apply strict safety filter
-                allowed_sources = [s["source"] for s in snippets if s.get("source")]
-                if not is_safe_copilot_response(copilot_resp, allowed_sources):
-                    return None
+                    # Validate against Pydantic model
+                    try:
+                        copilot_resp = CopilotResponse(**parsed)
+                    except Exception as exc:
+                        logger.warning("Pydantic validation failed for Groq response: %s", type(exc).__name__)
+                        return None
 
-                return copilot_resp
+                    # Apply strict safety filter
+                    allowed_sources = [s["source"] for s in snippets if s.get("source")]
+                    if not is_safe_copilot_response(copilot_resp, allowed_sources):
+                        return None
+
+                    # Record successful live call in sliding-window budget
+                    _sliding_window_budget.record_call()
+                    return copilot_resp
     except Exception as exc:
         logger.warning("Unexpected error during Groq API execution: %s", type(exc).__name__)
         return None
@@ -429,6 +526,8 @@ async def explain_risk(payload: CopilotRequest) -> CopilotResponse:
             "Copilot explain: crewId=%s sol=%d mode=%s latency=%.3fs status=%s",
             crew_id, sol, "cached", latency, "ok"
         )
+        if cached_file_resp.disclaimer != DISCLAIMER_TEXT:
+            cached_file_resp = cached_file_resp.model_copy(update={"disclaimer": DISCLAIMER_TEXT})
         return cached_file_resp
 
     # 3b. In-memory cache
@@ -439,7 +538,7 @@ async def explain_risk(payload: CopilotRequest) -> CopilotResponse:
             "Copilot explain: crewId=%s sol=%d mode=%s latency=%.3fs status=%s",
             crew_id, sol, "cached", latency, "ok"
         )
-        return cached_mem_resp.model_copy(update={"mode": "cached"})
+        return cached_mem_resp.model_copy(update={"mode": "cached", "disclaimer": DISCLAIMER_TEXT})
 
     # 4. If GROQ_API_KEY is present, attempt live Groq call
     live_resp: Optional[CopilotResponse] = None
@@ -457,6 +556,8 @@ async def explain_risk(payload: CopilotRequest) -> CopilotResponse:
         live_resp = await _call_groq_api(SYSTEM_PROMPT, user_prompt, snippets)
 
     if live_resp is not None:
+        if live_resp.disclaimer != DISCLAIMER_TEXT:
+            live_resp = live_resp.model_copy(update={"disclaimer": DISCLAIMER_TEXT})
         _memory_cache[(crew_id, sol)] = live_resp
         latency = time.monotonic() - start_time
         logger.info(
@@ -467,6 +568,8 @@ async def explain_risk(payload: CopilotRequest) -> CopilotResponse:
 
     # 5. Fallback chain: templated response built from drivers + snippets (mode='cached')
     templated_resp = _build_templated_response(crew_id, sol, drivers, snippets)
+    if templated_resp.disclaimer != DISCLAIMER_TEXT:
+        templated_resp = templated_resp.model_copy(update={"disclaimer": DISCLAIMER_TEXT})
     latency = time.monotonic() - start_time
     logger.info(
         "Copilot explain: crewId=%s sol=%d mode=%s latency=%.3fs status=%s",
