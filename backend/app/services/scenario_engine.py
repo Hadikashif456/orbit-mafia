@@ -13,6 +13,7 @@ from app.models import (
 )
 from app.services.crew_service import (
     CALLSIGNS,
+    DRIVER_LABELS,
     compute_cri_for,
     cri_series,
     top_driver_label,
@@ -57,17 +58,38 @@ def get_scenario_state(sol: int) -> ScenarioStateResponse:
 
         # Alerts only for non-green (amber or red) crew members
         if current_cri_res.status in ("amber", "red"):
-            prev_sol = max(1, sol - 1)
-            prev_cri_res = compute_cri_for(cid, prev_sol)
-            cri_from = prev_cri_res.cri
+            # criFrom = the HIGHEST CRI among the 3 sols BEFORE the current sol (e.g. Sol 144 -> max of Sol 141-143 = 86.6)
+            sols_before = list(range(max(1, sol - 3), sol))
+            cri_from = max(compute_cri_for(cid, s).cri for s in sols_before) if sols_before else current_cri_res.cri
             cri_to = current_cri_res.cri
 
+            # Initial severity determination
+            sev_rank = {"watch": 1, "warning": 2, "critical": 3}
+            rank_to_sev = {1: "watch", 2: "warning", 3: "critical"}
+
             if current_cri_res.cri < 50.0 or current_cri_res.status == "red":
-                severity = "critical"
+                cur_rank = 3
             elif current_cri_res.cri < 60.0 or (cri_from - cri_to) >= 10.0:
-                severity = "warning"
+                cur_rank = 2
             else:
-                severity = "watch"
+                cur_rank = 1
+
+            # Severity must never go down while the risk flag stays raised and CRI is falling (no warning -> watch -> warning flip)
+            for s_prev in range(max(140, sol - 1), sol):
+                prev_cri = compute_cri_for(cid, s_prev).cri
+                if prev_cri >= current_cri_res.cri:
+                    prev_sols_before = list(range(max(1, s_prev - 3), s_prev))
+                    prev_from = max(compute_cri_for(cid, s).cri for s in prev_sols_before) if prev_sols_before else prev_cri
+                    if prev_cri < 50.0:
+                        p_sev = 3
+                    elif prev_cri < 60.0 or (prev_from - prev_cri) >= 10.0:
+                        p_sev = 2
+                    else:
+                        p_sev = 1
+                    if p_sev > cur_rank:
+                        cur_rank = p_sev
+
+            severity = rank_to_sev[cur_rank]
 
             # Compute anomaly flags and risk_flag drivers
             vitals_history = get_vitals_history(cid, sol, window=14)
@@ -89,9 +111,15 @@ def get_scenario_state(sol: int) -> ScenarioStateResponse:
                 sol=sol,
             )
 
-            flag_drivers = r_flag.get("drivers", [])
+            # Use the same driver labels as crew_service.top_driver_label ("Cardiovascular strain", never "Cardio")
+            flag_drivers = []
+            sorted_contribs = sorted(current_cri_res.contributions.items(), key=lambda x: x[1], reverse=True)
+            for term, points in sorted_contribs:
+                if points >= 5.0 and term in DRIVER_LABELS:
+                    flag_drivers.append(DRIVER_LABELS[term])
             if not flag_drivers:
-                flag_drivers = [top_driver] if top_driver != "Baseline stable" else ["Physiological strain"]
+                top_lbl = top_driver_label(current_cri_res)
+                flag_drivers = [top_lbl] if top_lbl != "Baseline stable" else ["Cardiovascular strain"]
 
             pred_window = r_flag.get("predictedWindowHours", 48)
 

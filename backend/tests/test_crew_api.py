@@ -166,3 +166,97 @@ def test_no_hardcoded_numbers(client, temp_db):
             conn.commit()
         finally:
             conn.close()
+
+
+def test_biomarkers_query_filters_and_normalization(client):
+    """Test Task D2 biomarker query parameters: default short list, panel filter, names filter, and normalization."""
+    # 1. Default (no params): short list with CRP, Fibrinogen, plus CMP panel (~141 rows, not 2,086)
+    resp_def = client.get("/api/v1/crew/C001/biomarkers")
+    assert resp_def.status_code == 200
+    data_def = resp_def.json()
+    assert 50 <= len(data_def) <= 200
+    panels_def = {b["panel"] for b in data_def}
+    assert panels_def.issubset({"CMP", "CARDIO_EVE"})
+    names_def = {b["name"].upper() for b in data_def}
+    assert "CRP" in names_def
+    assert "FIBRINOGEN" in names_def
+
+    # 2. panel=all returns full legacy set
+    resp_all = client.get("/api/v1/crew/C001/biomarkers?panel=all")
+    assert resp_all.status_code == 200
+    data_all = resp_all.json()
+    assert len(data_all) > 1500
+
+    # 3. panel filter
+    resp_cmp = client.get("/api/v1/crew/C001/biomarkers?panel=CMP")
+    assert resp_cmp.status_code == 200
+    for b in resp_cmp.json():
+        assert b["panel"] == "CMP"
+
+    # 4. Normalized names: Il 6 = Il6 = IL-6
+    resp_sp = client.get("/api/v1/crew/C001/biomarkers?names=Il 6")
+    resp_no_sp = client.get("/api/v1/crew/C001/biomarkers?names=Il6")
+    resp_hyphen = client.get("/api/v1/crew/C001/biomarkers?names=IL-6")
+    assert resp_sp.status_code == 200
+    assert resp_no_sp.status_code == 200
+    assert resp_hyphen.status_code == 200
+    assert resp_sp.json() == resp_no_sp.json() == resp_hyphen.json()
+    assert len(resp_hyphen.json()) > 0
+    for b in resp_hyphen.json():
+        assert b["name"] == "IL-6"
+
+    # 5. Invalid inputs return 422
+    assert client.get("/api/v1/crew/C001/biomarkers?panel=NONEXISTENT").status_code == 422
+    assert client.get("/api/v1/crew/C001/biomarkers?names=bad$name!").status_code == 422
+    too_many = ",".join(f"Marker{i}" for i in range(25))
+    assert client.get(f"/api/v1/crew/C001/biomarkers?names={too_many}").status_code == 422
+
+
+def test_cri_default_markers_found_all_crew():
+    """Verify that CRI receives CRP, FIBRINOGEN, and IL-6 for all 4 crew with consistent units."""
+    from app.services.data_access import get_biomarkers
+    for cid in ["C001", "C002", "C003", "C004"]:
+        bio = get_biomarkers(cid, for_cri=True)
+        names = {b.name.strip().upper() for b in bio}
+        assert "CRP" in names, f"CRP missing for {cid}"
+        assert "FIBRINOGEN" in names, f"FIBRINOGEN missing for {cid}"
+        assert "IL-6" in names, f"IL-6 missing for {cid}"
+
+        # No row mixes units for any of the canonical markers
+        for m in ["CRP", "FIBRINOGEN", "IL-6"]:
+            m_units = {b.unit for b in bio if b.name.strip().upper() == m}
+            assert len(m_units) == 1, f"Multiple units for {m} in {cid}: {m_units}"
+
+
+def test_trend_endpoint_windows_and_consistency(client):
+    """Test Task D3 GET /api/v1/crew/{id}/trend: window=7 and 30, CRI consistency, and validation."""
+    # 1. Default window=7, default sol=144
+    resp_7 = client.get("/api/v1/crew/C002/trend")
+    assert resp_7.status_code == 200
+    data_7 = resp_7.json()
+    assert len(data_7) == 7
+    assert data_7[-1]["sol"] == 144
+    assert [p["sol"] for p in data_7] == list(range(138, 145))
+
+    # 2. Window=30
+    resp_30 = client.get("/api/v1/crew/C002/trend?window=30&sol=144")
+    assert resp_30.status_code == 200
+    data_30 = resp_30.json()
+    assert len(data_30) == 30
+    assert data_30[-1]["sol"] == 144
+
+    # 3. Sol 144 CRI matches /crew/{id}/cri?sol=144
+    resp_cri = client.get("/api/v1/crew/C002/cri?sol=144").json()
+    assert abs(data_7[-1]["cri"] - resp_cri["cri"]) <= 0.1
+    assert data_7[-1]["status"] == resp_cri["status"]
+
+    # 4. Bad window gives 422
+    assert client.get("/api/v1/crew/C002/trend?window=14").status_code == 422
+    assert client.get("/api/v1/crew/C002/trend?window=0").status_code == 422
+
+    # 5. Bad sol gives 422
+    assert client.get("/api/v1/crew/C002/trend?sol=0").status_code == 422
+    assert client.get("/api/v1/crew/C002/trend?sol=250").status_code == 422
+
+    # 6. Bad crew ID gives 422
+    assert client.get("/api/v1/crew/C999/trend").status_code == 422

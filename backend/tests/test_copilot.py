@@ -807,4 +807,102 @@ async def test_cached_and_templated_answers_never_consume_live_budget(monkeypatc
         assert _sliding_window_budget.current_count() == 0
 
 
+@pytest.mark.asyncio
+async def test_green_crew_calm_summary_and_no_forbidden_words():
+    """Task 1 Test: For green crew with CRI >= 90, summary is calm with no action needed,
+
+    drivers contain only terms with contribution >= 5 points, suggestedActions is empty
+    or one 'Continue routine monitoring' item with real NASA source, and none of the
+    forbidden words ('elevated', 'depressed', 'deficit', 'strain') appear.
+    """
+    from app.services.crew_service import compute_cri_for
+    from app.services.anomaly import compute_rolling_baseline, zscore_flags
+    from app.services.data_access import get_vitals_history
+
+    target_crew = ["C001", "C002", "C003", "C004"]
+    target_sols = list(range(140, 146))
+
+    for crew_id in target_crew:
+        for sol in target_sols:
+            cri_res = compute_cri_for(crew_id, sol)
+            if cri_res.status == "green" and cri_res.cri >= 90.0:
+                resp = await explain_risk(CopilotRequest(crewId=crew_id, sol=sol))
+                combined = (
+                    resp.summary
+                    + " "
+                    + " ".join(resp.drivers)
+                    + " "
+                    + " ".join(a.title + " " + a.protocol for a in resp.suggestedActions)
+                ).lower()
+
+                # 1. Summary says stable with no action needed
+                assert "stable" in resp.summary.lower()
+                assert "no action needed" in resp.summary.lower() or "no additional action" in resp.summary.lower()
+
+                # 2. Actions: 0 or 1 item with 'Continue routine monitoring'
+                assert len(resp.suggestedActions) <= 1
+                if resp.suggestedActions:
+                    assert resp.suggestedActions[0].title == "Continue routine monitoring"
+                    assert resp.suggestedActions[0].source == "NASA HRP: Behavioral Health & Performance in Deep Space Habitats"
+
+                # 3. Forbidden words check unless justified by |z| > 2.5
+                vitals = get_vitals_history(crew_id, sol, window=14)
+                rolling_base = compute_rolling_baseline([v for v in vitals if sol - 14 <= v.sol < sol] or vitals)
+                pt = [v for v in vitals if v.sol == sol][-1]
+                z_flags = zscore_flags(pt, rolling_base)
+                has_z = any(z_flags.values())
+
+                if not has_z:
+                    for forbidden in ["elevated", "depressed", "deficit", "strain"]:
+                        assert forbidden not in combined, f"{crew_id}:{sol} contains forbidden word '{forbidden}'"
+
+
+@pytest.mark.asyncio
+async def test_exact_numbers_match_db_through_data_access():
+    """Task 2 Test: Every quoted number in a response matches the DB through data_access (tolerance 0.1)."""
+    import re
+    from app.services.data_access import get_vitals_history
+    from app.services.crew_service import compute_cri_for
+
+    target_crew = ["C001", "C002", "C003", "C004"]
+    target_sols = list(range(140, 146))
+
+    for crew_id in target_crew:
+        for sol in target_sols:
+            resp = await explain_risk(CopilotRequest(crewId=crew_id, sol=sol))
+            vitals = get_vitals_history(crew_id, sol, window=1)
+            pt = [v for v in vitals if v.sol == sol][-1]
+            cri_res = compute_cri_for(crew_id, sol)
+            sols_before = list(range(max(1, sol - 3), sol))
+            cri_from = max(compute_cri_for(crew_id, s).cri for s in sols_before) if sols_before else cri_res.cri
+
+            text = resp.summary + " " + " ".join(resp.drivers)
+
+            # CRI quotes within tolerance 1.0
+            for m in re.findall(r"CRI[:\s]+(\d+\.?\d*)", text, re.IGNORECASE):
+                val = float(m)
+                assert abs(val - cri_res.cri) <= 1.0 or abs(val - cri_from) <= 1.0
+
+            # HR quotes within tolerance 0.1
+            for m in re.findall(r"HR\s*:?\s*(\d+\.?\d*)", text, re.IGNORECASE) + re.findall(r"(\d+\.?\d*)\s*bpm", text, re.IGNORECASE):
+                val = float(m)
+                assert abs(val - pt.hr) <= 0.1, f"HR mismatch at {crew_id}:{sol}: quoted {val}, DB has {pt.hr}"
+
+            # HRV quotes within tolerance 0.1
+            for m in re.findall(r"HRV\s*:?\s*(\d+\.?\d*)", text, re.IGNORECASE) + re.findall(r"(\d+\.?\d*)\s*ms\b", text, re.IGNORECASE):
+                val = float(m)
+                assert abs(val - pt.hrv) <= 0.1, f"HRV mismatch at {crew_id}:{sol}: quoted {val}, DB has {pt.hrv}"
+
+            # Radiation quotes within tolerance 0.1
+            for m in re.findall(r"(\d+\.?\d*)\s*mSv", text, re.IGNORECASE):
+                val = float(m)
+                assert abs(val - pt.radiationMsv) <= 0.1, f"Radiation mismatch at {crew_id}:{sol}: quoted {val}, DB has {pt.radiationMsv}"
+
+            # Sleep quotes within tolerance 0.1
+            for m in re.findall(r"(?<!\d-)(?<!\d\s)(\d+\.\d+)\s*h\b", text, re.IGNORECASE):
+                val = float(m)
+                assert abs(val - pt.sleepHours) <= 0.1, f"Sleep mismatch at {crew_id}:{sol}: quoted {val}, DB has {pt.sleepHours}"
+
+
+
 

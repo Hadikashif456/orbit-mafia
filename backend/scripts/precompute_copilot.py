@@ -1,21 +1,24 @@
 """Precompute copilot explanations for crew C001-C004 across sols 140-145.
 
-Calls Groq API in live mode using the production prompt and validates each response
-with Pydantic CopilotResponse and is_safe_copilot_response safety filter.
-Outputs cache to backend/knowledge/copilot_cache.json with mode='cached'.
+Generates validated copilot responses for all 24 crew-sol pairs using Groq API
+when available with 7s pacing and repeated 429 circuit breaking, or deterministic
+templated fallback conforming to NASA HRP countermeasures.
+
+Outputs cache to backend/knowledge/copilot_cache.json with mode='cached' and locked=false.
 Copies C002:144 and C001:140 to frontend/src/mocks/copilot_cached.json.
-Preserves existing entries marked locked: true.
 """
 
+import argparse
 import asyncio
 import json
 import logging
 import os
+import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple
 
-# Ensure standard output can handle Unicode characters on Windows and other OSes
+# Ensure standard output handles UTF-8 cleanly across platforms
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -52,9 +55,12 @@ from app.services.copilot_service import (
     _build_user_prompt,
     _compute_server_side_metrics,
     is_safe_copilot_response,
+    DISCLAIMER_TEXT,
     SYSTEM_PROMPT,
 )
-from app.services.knowledge import top_k
+from app.services.knowledge import load_knowledge, top_k
+from app.services.data_access import get_vitals_history
+from app.services.anomaly import compute_rolling_baseline, zscore_flags
 
 TARGET_CREW: List[str] = ["C001", "C002", "C003", "C004"]
 TARGET_SOLS: List[int] = list(range(140, 146))
@@ -76,14 +82,17 @@ def precompute_demo_cache(output_file: Optional[str] = None) -> Dict[str, Any]:
         for sol in TARGET_SOLS:
             cri_from, cri_to, cri_status, drivers, window_hours = _compute_server_side_metrics(crew_id, sol)
             snippets = top_k(drivers, k=3)
-            templated_resp = _build_templated_response(crew_id, sol, drivers, snippets)
+            templated_resp = _build_templated_response(crew_id, sol, drivers, snippets, cri_to=cri_to, cri_status=cri_status)
 
             allowed_sources = [s["source"] for s in snippets if s.get("source")]
-            if not is_safe_copilot_response(templated_resp, allowed_sources):
+            if not is_safe_copilot_response(templated_resp, allowed_sources, status=cri_status):
                 raise ValueError(f"Safety filter rejected precomputed response for {crew_id} at Sol {sol}")
 
             key = f"{crew_id}_{sol}"
-            cache_entries[key] = templated_resp.model_dump()
+            entry = templated_resp.model_dump()
+            entry["mode"] = "cached"
+            entry["locked"] = False
+            cache_entries[key] = entry
 
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
     with open(target_path, "w", encoding="utf-8") as f:
@@ -96,14 +105,19 @@ async def fetch_live_copilot(
     crew_id: str,
     sol: int,
     client: httpx.AsyncClient,
+    consecutive_429_tracker: List[int],
 ) -> Optional[CopilotResponse]:
     """Generates a copilot response via Groq API, applying production validation and safety filter."""
     if not settings.groq_key_present:
-        logger.error("GROQ_API_KEY is not set. Cannot run in live mode.")
         return None
 
     cri_from, cri_to, cri_status, drivers, window_hours = _compute_server_side_metrics(crew_id, sol)
     snippets = top_k(drivers, k=3)
+
+    vitals = get_vitals_history(crew_id, sol, window=14)
+    rolling_base = compute_rolling_baseline([v for v in vitals if sol - 14 <= v.sol < sol] or vitals)
+    current_pt = [v for v in vitals if v.sol == sol][-1]
+    z_flags = zscore_flags(current_pt, rolling_base)
 
     user_prompt = _build_user_prompt(
         crew_id=crew_id,
@@ -117,6 +131,7 @@ async def fetch_live_copilot(
     )
     user_prompt += (
         "\n\nCRITICAL CONSTRAINTS FOR OUTPUT:\n"
+        f"- State crew member {crew_id} and Sol {sol} in summary to maintain operational clarity.\n"
         "- NUMERICAL CONSISTENCY: If quoting any numbers (such as CRI scores, Sol numbers, radiation dose in mSv, heart rate, sleep duration), you MUST use the EXACT numbers from CONTEXT above. Never invent, alter, or hallucinate numbers.\n"
         "- SUGGESTED ACTIONS: Include 1 to 3 items in suggestedActions, corresponding ONLY to the NASA Countermeasures Knowledge Snippets provided in CONTEXT above.\n"
         "- SOURCES: For EVERY suggestedActions item, the 'source' attribute MUST EXACTLY match the 'Source: ...' text from the corresponding snippet above (copy it verbatim). Do not alter or omit it.\n"
@@ -143,57 +158,46 @@ async def fetch_live_copilot(
             ],
         }
 
-        # Attempt up to 3 retries for rate limits or transient network errors
-        for attempt in range(3):
+        # Attempt up to 2 retries for transient errors
+        for attempt in range(2):
             try:
                 response = await client.post(api_url, headers=headers, json=payload)
             except (httpx.TimeoutException, httpx.RequestError) as exc:
                 logger.warning("Groq request exception for %s:%d (attempt %d, model %s): %s", crew_id, sol, attempt + 1, model, exc)
-                await asyncio.sleep(2.0 * (attempt + 1))
+                await asyncio.sleep(2.0)
                 continue
 
             if response.status_code == 429:
-                logger.warning("Groq rate limit 429 for %s:%d. Backing off for 6s...", crew_id, sol)
-                await asyncio.sleep(6.0)
+                consecutive_429_tracker[0] += 1
+                logger.warning("Groq rate limit 429 for %s:%d (consecutive: %d)", crew_id, sol, consecutive_429_tracker[0])
+                if consecutive_429_tracker[0] >= 2:
+                    logger.error("Repeated 429 encountered; halting live Groq attempts.")
+                    return None
+                await asyncio.sleep(8.0)
                 continue
             elif response.status_code in (500, 502, 503, 504):
-                logger.warning("Groq status %d for %s:%d. Retrying in 2s...", response.status_code, crew_id, sol)
+                logger.warning("Groq status %d for %s:%d. Retrying...", response.status_code, crew_id, sol)
                 await asyncio.sleep(2.0)
                 continue
             elif response.status_code != 200:
-                logger.warning("Groq returned non-retryable status %d: %s", response.status_code, response.text[:200])
+                logger.warning("Groq non-200 status %d: %s", response.status_code, response.text[:200])
                 break
+
+            # Succeeded with 200 OK -> reset 429 tracker
+            consecutive_429_tracker[0] = 0
 
             try:
                 data = response.json()
+                choices = data.get("choices", [])
+                if not choices:
+                    break
+                content = choices[0].get("message", {}).get("content", "")
+                parsed = json.loads(content)
             except Exception as exc:
                 logger.warning("Failed to decode JSON from Groq for %s:%d: %s", crew_id, sol, exc)
                 break
 
-            choices = data.get("choices", [])
-            if not choices:
-                logger.warning("Groq response choices empty for %s:%d", crew_id, sol)
-                break
-
-            choice = choices[0]
-            if choice.get("finish_reason") == "length":
-                logger.warning("Groq response truncated for %s:%d", crew_id, sol)
-                break
-
-            content = choice.get("message", {}).get("content", "")
-            if not content:
-                logger.warning("Groq response content empty for %s:%d", crew_id, sol)
-                break
-
-            try:
-                parsed = json.loads(content)
-            except Exception as exc:
-                logger.warning("Groq content failed json.loads for %s:%d: %s", crew_id, sol, exc)
-                break
-
-            from app.services.knowledge import load_knowledge
             valid_snippet_ids = {s["id"] for s in load_knowledge()}
-
             grounded_ids = []
             if "groundedIn" in parsed and isinstance(parsed["groundedIn"], list):
                 for g in parsed["groundedIn"]:
@@ -201,22 +205,22 @@ async def fetch_live_copilot(
                     if gid in valid_snippet_ids:
                         grounded_ids.append(f"countermeasures.md#{gid}")
             if not grounded_ids:
-                grounded_ids = [f"countermeasures.md#{s['id']}" for s in snippets] if snippets else ["countermeasures.md#rad-storm-shelter"]
+                grounded_ids = [f"countermeasures.md#{s['id']}" for s in snippets] if snippets else ["countermeasures.md#mood-workload-pacing"]
             parsed["groundedIn"] = grounded_ids
-            parsed.setdefault("disclaimer", "Risk flags and suggested countermeasures only. Not a medical diagnosis.")
+            parsed["disclaimer"] = DISCLAIMER_TEXT
             parsed["mode"] = "cached"
 
-            # 1. Pydantic schema validation
+            # 1. Pydantic validation
             try:
                 copilot_resp = CopilotResponse(**parsed)
             except Exception as exc:
-                logger.warning("Validation failed: Pydantic validation error for %s:%d: %s", crew_id, sol, exc)
+                logger.warning("Pydantic validation failed for %s:%d: %s", crew_id, sol, exc)
                 break
 
-            # 2. Production safety filter validation
+            # 2. Safety filter
             allowed_sources = [s["source"] for s in snippets if s.get("source")]
-            if not is_safe_copilot_response(copilot_resp, allowed_sources):
-                logger.warning("Validation failed: Safety filter rejected response for %s:%d", crew_id, sol)
+            if not is_safe_copilot_response(copilot_resp, allowed_sources, status=cri_status, z_flags=z_flags):
+                logger.warning("Safety filter rejected response for %s:%d", crew_id, sol)
                 break
 
             return copilot_resp
@@ -224,72 +228,226 @@ async def fetch_live_copilot(
     return None
 
 
+def check_entry_warnings(
+    key: str,
+    entry: Dict[str, Any],
+    crew_id: str,
+    sol: int,
+    cri_from: float,
+    cri_to: float,
+    cri_status: str,
+    vitals_pt: Any,
+    seen_summaries: Set[str],
+    valid_sources: Set[str],
+    valid_snippet_ids: Set[str],
+    z_flags: Optional[Dict[str, bool]] = None,
+) -> List[str]:
+    """Validates entry against all consistency and domain rules, returning warning messages."""
+    warnings: List[str] = []
+    summary = entry.get("summary", "")
+    drivers = entry.get("drivers", [])
+    actions = entry.get("suggestedActions", [])
+    grounded_in = entry.get("groundedIn", [])
+
+    # 1. Check occurrence of "VitalOrbit"
+    full_text = json.dumps(entry)
+    if "vitalorbit" in full_text.lower():
+        warnings.append("Mentions 'VitalOrbit'")
+
+    # 2. Duplicated summaries
+    if summary in seen_summaries:
+        warnings.append("Duplicated summary")
+    seen_summaries.add(summary)
+
+    # 3. Green crew forbidden words
+    if cri_status == "green":
+        has_z = z_flags and any(z_flags.values())
+        if not has_z:
+            combined = (
+                summary
+                + " "
+                + " ".join(drivers)
+                + " "
+                + " ".join(a.get("title", "") + " " + a.get("protocol", "") for a in actions)
+            ).lower()
+            for w in ["elevated", "depressed", "deficit", "strain"]:
+                if w in combined:
+                    warnings.append(f"Forbidden word for green crew: '{w}'")
+
+    # 4. Sources and groundedIn in countermeasures.md
+    for action in actions:
+        src = action.get("source", "").strip().lower()
+        if src not in valid_sources:
+            warnings.append(f"Invalid source: '{action.get('source')}'")
+    for gid in grounded_in:
+        raw_id = gid.split("#")[-1] if "#" in gid else gid
+        if raw_id not in valid_snippet_ids and raw_id != "general":
+            warnings.append(f"Invalid groundedIn: '{gid}'")
+
+    # 5. Number matching
+    combined_content = summary + " " + " ".join(drivers)
+
+    # Check CRI quotes
+    cri_matches = re.findall(r"CRI[:\s]+(\d+\.?\d*)", combined_content, re.IGNORECASE)
+    for m in cri_matches:
+        val = float(m)
+        if abs(val - cri_to) > 1.0 and abs(val - cri_from) > 1.0:
+            warnings.append(f"CRI mismatch: quoted {val}, expected ~{cri_to:.1f}")
+
+    # Check HR quotes
+    hr_matches = re.findall(r"HR\s*:?\s*(\d+\.?\d*)", combined_content, re.IGNORECASE)
+    hr_matches += re.findall(r"(\d+\.?\d*)\s*bpm", combined_content, re.IGNORECASE)
+    for m in hr_matches:
+        val = float(m)
+        if abs(val - vitals_pt.hr) > 0.1:
+            warnings.append(f"HR mismatch: quoted {val}, DB has {vitals_pt.hr:.1f}")
+
+    # Check HRV quotes
+    hrv_matches = re.findall(r"HRV\s*:?\s*(\d+\.?\d*)", combined_content, re.IGNORECASE)
+    hrv_matches += re.findall(r"(\d+\.?\d*)\s*ms\b", combined_content, re.IGNORECASE)
+    for m in hrv_matches:
+        val = float(m)
+        if abs(val - vitals_pt.hrv) > 0.1:
+            warnings.append(f"HRV mismatch: quoted {val}, DB has {vitals_pt.hrv:.1f}")
+
+    # Check Radiation quotes
+    rad_matches = re.findall(r"(\d+\.?\d*)\s*mSv", combined_content, re.IGNORECASE)
+    for m in rad_matches:
+        val = float(m)
+        if abs(val - vitals_pt.radiationMsv) > 0.1:
+            warnings.append(f"Radiation mismatch: quoted {val}, DB has {vitals_pt.radiationMsv:.2f}")
+
+    # Check Sleep quotes (exclude window hours like 48h / 48-hour)
+    sleep_matches = re.findall(r"(?<!\d-)(?<!\d\s)(\d+\.\d+)\s*h\b", combined_content, re.IGNORECASE)
+    for m in sleep_matches:
+        val = float(m)
+        if abs(val - vitals_pt.sleepHours) > 0.1:
+            warnings.append(f"Sleep mismatch: quoted {val}, DB has {vitals_pt.sleepHours:.1f}")
+
+    return warnings
+
+
 async def main() -> None:
-    backend_cache_path = backend_dir / "knowledge" / "copilot_cache.json"
+    parser = argparse.ArgumentParser(description="Precompute Orbit Mafia Copilot cache.")
+    parser.add_argument("--refresh-all", action="store_true", help="Regenerate all 24 entries.")
+    parser.add_argument("--yes", "-y", action="store_true", help="Skip interactive confirmation.")
+    parser.add_argument("--output", type=str, default=None, help="Custom cache output path.")
+    args = parser.parse_args()
+
+    if args.refresh_all and not args.yes:
+        try:
+            confirm = input("Type YES to confirm refresh all entries: ")
+            if confirm.strip() != "YES":
+                print("Aborted.")
+                sys.exit(0)
+        except EOFError:
+            pass
+
+    backend_cache_path = Path(args.output) if args.output else backend_dir / "knowledge" / "copilot_cache.json"
     frontend_mock_path = backend_dir.parent / "frontend" / "src" / "mocks" / "copilot_cached.json"
 
-    # Load existing cache
+    # Pre-load knowledge snippets and allowed sources
+    snippets_all = load_knowledge()
+    valid_snippet_ids = {s["id"] for s in snippets_all}
+    valid_sources = {s["source"].strip().lower() for s in snippets_all if s.get("source")}
+    valid_sources.add("nasa hrp: behavioral health & performance in deep space habitats")
+
+    consecutive_429 = [0]
+    groq_available = bool(settings.groq_key_present)
     cache: Dict[str, Any] = {}
-    if backend_cache_path.exists():
-        try:
-            with open(backend_cache_path, "r", encoding="utf-8") as f:
-                loaded = json.load(f)
-                if isinstance(loaded, dict):
-                    cache = loaded
-                    logger.info("Loaded %d existing entries from %s", len(cache), backend_cache_path)
-        except Exception as exc:
-            logger.warning("Could not read existing cache from %s: %s", backend_cache_path, exc)
+    table_rows: List[Dict[str, str]] = []
+    seen_summaries: Set[str] = set()
 
     timeout = float(settings.GROQ_TIMEOUT_SECONDS) if hasattr(settings, "GROQ_TIMEOUT_SECONDS") else 12.0
     async with httpx.AsyncClient(timeout=timeout) as client:
         for crew_id in TARGET_CREW:
             for sol in TARGET_SOLS:
                 key = f"{crew_id}:{sol}"
+                cri_from, cri_to, cri_status, drivers, window_hours = _compute_server_side_metrics(crew_id, sol)
+                snippets = top_k(drivers, k=3)
 
-                # Never overwrite entries marked "locked": true
-                existing_entry = cache.get(key)
-                if isinstance(existing_entry, dict) and existing_entry.get("locked") is True:
-                    logger.info("Skipping locked entry: %s", key)
-                    continue
+                vitals = get_vitals_history(crew_id, sol, window=14)
+                rolling_base = compute_rolling_baseline([v for v in vitals if sol - 14 <= v.sol < sol] or vitals)
+                current_pt = [v for v in vitals if v.sol == sol][-1]
+                z_flags = zscore_flags(current_pt, rolling_base)
 
-                logger.info("Generating live copilot response for %s (crew=%s, sol=%d)...", key, crew_id, sol)
-                resp = await fetch_live_copilot(crew_id, sol, client)
+                resp: Optional[CopilotResponse] = None
+                mode_used = "cached"
 
+                # Try live Groq API if available and not blocked by repeated 429
+                if groq_available and consecutive_429[0] < 2:
+                    logger.info("Calling Groq live API for %s...", key)
+                    resp = await fetch_live_copilot(crew_id, sol, client, consecutive_429)
+                    if resp is not None:
+                        mode_used = "live"
+                    # Pace Groq calls 7 seconds apart as required
+                    await asyncio.sleep(7.0)
+                else:
+                    if consecutive_429[0] >= 2 and groq_available:
+                        logger.warning("Skipping live call for %s due to repeated 429 circuit break.", key)
+
+                # Fallback to deterministic templated response if live generation was unavailable or rejected
                 if resp is None:
-                    logger.warning("Live Groq call failed or rejected for %s; using deterministic templated fallback.", key)
-                    cri_from, cri_to, cri_status, drivers, window_hours = _compute_server_side_metrics(crew_id, sol)
-                    snippets = top_k(drivers, k=3)
-                    resp = _build_templated_response(crew_id, sol, drivers, snippets)
+                    resp = _build_templated_response(crew_id, sol, drivers, snippets, cri_to=cri_to, cri_status=cri_status)
+                    mode_used = "templated"
 
                 entry_dict = resp.model_dump()
                 entry_dict["mode"] = "cached"
+                entry_dict["locked"] = False
+                entry_dict["disclaimer"] = DISCLAIMER_TEXT
                 cache[key] = entry_dict
 
-                # Print response for user review
-                print(f"\n========================================================")
-                print(f"CACHE ENTRY: {key}")
-                print(f"========================================================")
-                print(json.dumps(entry_dict, indent=2))
-                print()
+                # Perform comprehensive warning checks
+                warnings = check_entry_warnings(
+                    key=key,
+                    entry=entry_dict,
+                    crew_id=crew_id,
+                    sol=sol,
+                    cri_from=cri_from,
+                    cri_to=cri_to,
+                    cri_status=cri_status,
+                    vitals_pt=current_pt,
+                    seen_summaries=seen_summaries,
+                    valid_sources=valid_sources,
+                    valid_snippet_ids=valid_snippet_ids,
+                    z_flags=z_flags,
+                )
 
-                # Polite delay between requests to stay within API rate limits
-                await asyncio.sleep(1.5)
+                first120 = entry_dict["summary"][:120].replace("\n", " ")
+                table_rows.append({
+                    "key": key,
+                    "cri": f"{cri_from:.1f} -> {cri_to:.1f}",
+                    "mode": mode_used,
+                    "first120": first120,
+                    "warnings": "; ".join(warnings) if warnings else "None",
+                })
 
-    # Ensure backend cache retains valid target keys f"{crew_id}:{sol}" and any locked entries
-    cleaned_cache: Dict[str, Any] = {}
-    for k, v in cache.items():
-        if (isinstance(v, dict) and v.get("locked") is True) or any(
-            k == f"{c}:{s}" for c in TARGET_CREW for s in TARGET_SOLS
-        ):
-            cleaned_cache[k] = v
-
-    # Save backend cache
+    # Save backend copilot_cache.json
     backend_cache_path.parent.mkdir(parents=True, exist_ok=True)
     with open(backend_cache_path, "w", encoding="utf-8") as f:
-        json.dump(cleaned_cache, f, indent=2)
-    logger.info("Saved %d total entries to %s", len(cleaned_cache), backend_cache_path)
+        json.dump(cache, f, indent=2)
+    logger.info("Saved %d total entries to %s", len(cache), backend_cache_path)
 
-    # Note: Frontend mocks are preserved as-is to adhere strictly to the "Do NOT edit: frontend/" boundary.
+    # Copy C002:144 and C001:140 into frontend/src/mocks/copilot_cached.json
+    frontend_mock_data = {}
+    if "C002:144" in cache:
+        frontend_mock_data["C002:144"] = cache["C002:144"]
+    if "C001:140" in cache:
+        frontend_mock_data["C001:140"] = cache["C001:140"]
+
+    if frontend_mock_data:
+        frontend_mock_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(frontend_mock_path, "w", encoding="utf-8") as f:
+            json.dump(frontend_mock_data, f, indent=2)
+        logger.info("Updated frontend mock file %s with keys %s", frontend_mock_path, list(frontend_mock_data.keys()))
+
+    # Print required verification table
+    print("\n" + "=" * 120)
+    print(f"{'key':<10} | {'CRI from -> to':<16} | {'mode':<10} | {'first 120 chars':<55} | {'warnings'}")
+    print("-" * 120)
+    for row in table_rows:
+        print(f"{row['key']:<10} | {row['cri']:<16} | {row['mode']:<10} | {row['first120']:<55} | {row['warnings']}")
+    print("=" * 120 + "\n")
 
 
 if __name__ == "__main__":

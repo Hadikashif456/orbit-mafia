@@ -71,30 +71,30 @@ def one_day(rng: random.Random, crew: str, sol: int) -> dict:
 
     if crew == "C002":
         if sol == 141:
-            sleep = rng.uniform(5.4, 5.7)
+            sleep = rng.uniform(5.6, 5.8)
             mood = 2
         elif sol == 142:
-            sleep = rng.uniform(5.5, 5.8)
-            hr += rng.uniform(2.5, 4.0)
-            hrv -= rng.uniform(4.0, 6.0)
+            sleep = rng.uniform(5.75, 5.80)
+            hr += rng.uniform(2.5, 3.5)
+            hrv -= rng.uniform(3.5, 5.0)
             mood = 3
         elif sol == 143:
-            sleep = rng.uniform(7.1, 7.5)
-            radiation = rng.uniform(8.0, 8.4)  # Acute SPE spike
-            hr += rng.uniform(0.5, 1.5)
-            hrv -= rng.uniform(1.0, 2.5)
-            mood = 4
+            sleep = rng.uniform(5.78, 5.80)
+            radiation = rng.uniform(7.85, 7.95)  # Acute SPE spike (~8.0 mSv)
+            hr = rng.uniform(69.0, 70.0)        # ~70 bpm
+            hrv = rng.uniform(55.0, 56.0)       # ~55 ms
+            mood = 3
         elif sol == 144:
-            sleep = rng.uniform(3.9, 4.3)
-            radiation = rng.uniform(5.0, 5.5)  # Residual SPE
-            hr += rng.uniform(17.0, 20.0)
-            hrv -= rng.uniform(29.0, 35.0)
+            sleep = rng.uniform(5.2, 5.4)
+            radiation = rng.uniform(5.0, 5.3)   # Residual SPE
+            hr = rng.uniform(83.5, 85.0)
+            hrv = rng.uniform(40.0, 42.0)
             mood = 2
         elif sol == 145:
-            sleep = rng.uniform(5.5, 5.8)
-            radiation = rng.uniform(2.0, 2.5)
-            hr += rng.uniform(9.0, 11.0)
-            hrv -= rng.uniform(16.0, 20.0)
+            sleep = rng.uniform(5.4, 5.6)
+            radiation = rng.uniform(2.0, 2.4)
+            hr = rng.uniform(74.5, 76.0)
+            hrv = rng.uniform(50.0, 51.5)
             mood = 3
     elif crew == "C003":
         if 141 <= sol <= 143:
