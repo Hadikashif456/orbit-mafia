@@ -79,6 +79,21 @@ describe('CameraController', () => {
     expect(Math.abs(run(camera, 1).x - a)).toBeLessThan(0.001);
   });
 
+  it('travels in and out when pushed by the mouse, then coasts to a stop', () => {
+    const camera = new CameraController();
+    camera.travel(0.6);
+    const pushedIn = run(camera, 3).z;
+    expect(pushedIn).toBeGreaterThan(0.05);
+    expect(Math.abs(run(camera, 1).z - pushedIn)).toBeLessThan(0.001);
+    for (let i = 0; i < 40; i++) {
+      camera.travel(-0.6);
+      run(camera, 0.5);
+    }
+    const state = run(camera, 3);
+    expect(state.z).toBeLessThan(0);
+    expect(state.z).toBeGreaterThanOrEqual(CAMERA_LIMITS.zMin);
+  });
+
   it('eases back to the origin on reset', () => {
     const camera = new CameraController();
     camera.setHeld('right', true);

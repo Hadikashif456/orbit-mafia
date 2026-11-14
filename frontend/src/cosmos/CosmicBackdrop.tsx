@@ -9,6 +9,21 @@ import type { SceneId } from './scenes';
 const TRANSITION_SECONDS = 2.2;
 const MAX_DPR = 2;
 const MAX_QUALITY_SCALE = 1.6;
+/** On the cosmos page, scrolling walks through the scenes in this order. */
+const SCROLL_ORDER: readonly SceneId[] = SCENES.map((s) => s.id);
+const LAST = SCROLL_ORDER.length - 1;
+
+/**
+ * Where the scroll should put us, as a position along SCROLL_ORDER
+ * (0 = first scene, 1 = second, 1.5 = half-way between second and third).
+ * Each scene holds still for the first and last part of its stretch.
+ */
+const scrollGoal = (progress: number): number => {
+  const along = Math.min(1, Math.max(0, progress)) * LAST;
+  const index = Math.min(LAST - 1, Math.floor(along));
+  const local = Math.min(1, Math.max(0, (along - index - 0.12) / 0.76));
+  return index + local * local * (3 - 2 * local);
+};
 
 const easeInOut = (t: number): number => t * t * (3 - 2 * t);
 
@@ -18,10 +33,11 @@ const easeInOut = (t: number): number => t * t * (3 - 2 * t);
  * foreground behave exactly as before.
  */
 export const CosmicBackdrop: FC = () => {
-  const { scene, immersive, camera } = useCosmos();
+  const { scene, immersive, scrollProgress, camera } = useCosmos();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const targetRef = useRef<SceneId>(scene);
+  const immersiveRef = useRef(immersive);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -29,6 +45,7 @@ export const CosmicBackdrop: FC = () => {
   }, [scene]);
 
   useEffect(() => {
+    immersiveRef.current = immersive;
     camera.setInteractive(immersive);
   }, [camera, immersive]);
 
@@ -67,6 +84,8 @@ export const CosmicBackdrop: FC = () => {
     let shown: SceneId = targetRef.current;
     let incoming: SceneId = shown;
     let mix = 0;
+    let scrollPos = Math.round(scrollProgress.current * LAST);
+    let wasScrollDriven = false;
     // Reduced motion freezes the scene on a composed frame instead of animating.
     let time = reducedMotion ? 24 : 0;
     let last = performance.now();
@@ -93,28 +112,58 @@ export const CosmicBackdrop: FC = () => {
         }
       }
 
-      const target = targetRef.current;
-      if (target !== incoming) {
-        // A new request mid-transition: settle on whichever scene is dominant.
-        if (mix > 0.5) shown = incoming;
-        incoming = target;
-        mix = 0;
-      }
-      if (incoming !== shown) {
-        mix += dt / (reducedMotion ? 0.5 : TRANSITION_SECONDS);
-        if (mix >= 1) {
-          shown = incoming;
+      let from: SceneId;
+      let to: SceneId;
+      let blend: number;
+      if (immersiveRef.current) {
+        // Cosmos page: the scroll position is the transition. The position
+        // chases the scroll target so wheel steps become one smooth dissolve.
+        const goal = scrollGoal(scrollProgress.current);
+        // Arriving on the page (including by a link to a later screen):
+        // start on the right scene instead of dissolving there from the first.
+        if (!wasScrollDriven) scrollPos = goal;
+        scrollPos += (goal - scrollPos) * (reducedMotion ? 1 : 1 - Math.exp(-4.5 * dt));
+        if (Math.abs(goal - scrollPos) < 0.0005) scrollPos = goal;
+        const index = Math.min(LAST, Math.floor(scrollPos + 0.0005));
+        const part = Math.max(0, scrollPos - index);
+        from = SCROLL_ORDER[index];
+        to = SCROLL_ORDER[Math.min(LAST, index + 1)];
+        blend = part < 0.001 ? 0 : part;
+        wasScrollDriven = true;
+      } else {
+        if (wasScrollDriven) {
+          // Leaving the cosmos page: carry on from whichever scene was showing.
+          shown = SCROLL_ORDER[Math.round(scrollPos)];
+          incoming = shown;
+          mix = 0;
+          wasScrollDriven = false;
+        }
+        const target = targetRef.current;
+        if (target !== incoming) {
+          // A new request mid-transition: settle on whichever scene is dominant.
+          if (mix > 0.5) shown = incoming;
+          incoming = target;
           mix = 0;
         }
+        if (incoming !== shown) {
+          mix += dt / (reducedMotion ? 0.5 : TRANSITION_SECONDS);
+          if (mix >= 1) {
+            shown = incoming;
+            mix = 0;
+          }
+        }
+        from = shown;
+        to = incoming;
+        blend = easeInOut(mix);
       }
 
-      const profile = getScene(mix > 0.5 ? incoming : shown).camera;
+      const profile = getScene(blend > 0.5 ? to : from).camera;
       renderer.render({
         time,
         camera: camera.update(dt, time, profile, reducedMotion),
-        from: shown,
-        to: incoming,
-        mix: easeInOut(mix),
+        from,
+        to,
+        mix: blend,
       });
     };
     raf = requestAnimationFrame(tick);
@@ -125,7 +174,7 @@ export const CosmicBackdrop: FC = () => {
       motionQuery.removeEventListener('change', onMotionChange);
       renderer.dispose();
     };
-  }, [camera]);
+  }, [camera, scrollProgress]);
 
   const definition = getScene(scene);
 
