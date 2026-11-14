@@ -10,6 +10,7 @@ When the db file exists, behaviour is unchanged.
 """
 
 import sqlite3
+from pathlib import Path
 from typing import Generator
 
 from fastapi import HTTPException, status
@@ -22,7 +23,17 @@ def get_read_only_db() -> Generator[sqlite3.Connection, None, None]:
 
     Uses URI syntax 'file:{path}?mode=ro' to enforce read-only access at the OS/driver level.
     """
-    db_uri = f"file:{settings.DB_PATH}?mode=ro"
+    db_path = Path(settings.DB_PATH)
+    if not db_path.exists():
+        repo_root = Path(__file__).resolve().parents[3]
+        cand = repo_root / "backend" / db_path
+        if cand.exists():
+            db_path = cand
+        else:
+            cand2 = repo_root / db_path
+            if cand2.exists():
+                db_path = cand2
+    db_uri = f"file:{db_path.resolve().as_posix()}?mode=ro"
     # uri=True allows mode=ro in SQLite URI
     try:
         conn = sqlite3.connect(db_uri, uri=True, check_same_thread=False)

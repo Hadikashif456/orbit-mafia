@@ -23,7 +23,7 @@ async def explain_risk_endpoint(
     Headers:
         - Cache-Control: no-store
     Rate limits:
-        - 10 per minute and 100 per day per IP
+        - 30 per minute and 300 per day per IP
     """
     response.headers["Cache-Control"] = "no-store"
     return await explain_risk(payload)

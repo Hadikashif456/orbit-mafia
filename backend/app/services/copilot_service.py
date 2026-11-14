@@ -23,6 +23,7 @@ from app.models import CopilotRequest, CopilotResponse, SuggestedAction, VitalPo
 from app.services.data_access import get_vitals_history, get_biomarkers
 from app.services.knowledge import top_k
 from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
+from app.services.crew_service import compute_cri_for
 
 logger = logging.getLogger("orbitmafia.copilot")
 
@@ -178,30 +179,11 @@ def _compute_server_side_metrics(crew_id: str, sol: int) -> Tuple[float, float, 
     vitals_history = get_vitals_history(crew_id, sol, window=14)
     baseline = get_baseline(vitals_history)
     vitals_window = [v for v in vitals_history if sol - 2 <= v.sol <= sol]
-    biomarkers = get_biomarkers(crew_id)
-    inflammation = compute_inflammation_score(biomarkers)
 
-    current_cri_res = compute_cri(
-        vitals_window=vitals_window,
-        baseline=baseline,
-        inflammation_score=inflammation,
-        crew_id=crew_id,
-        sol=sol,
-    )
-
+    current_cri_res = compute_cri_for(crew_id, sol)
     prev_sol = max(1, sol - 1)
-    prev_window = [v for v in vitals_history if prev_sol - 2 <= v.sol <= prev_sol]
-    if prev_window:
-        prev_cri_res = compute_cri(
-            vitals_window=prev_window,
-            baseline=baseline,
-            inflammation_score=inflammation,
-            crew_id=crew_id,
-            sol=prev_sol,
-        )
-        cri_from = prev_cri_res.cri
-    else:
-        cri_from = 82.0
+    prev_cri_res = compute_cri_for(crew_id, prev_sol)
+    cri_from = prev_cri_res.cri
     cri_to = current_cri_res.cri
 
     # Map contributions and vitals to plain-language driver keywords

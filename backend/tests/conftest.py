@@ -1,4 +1,4 @@
-"""Pytest configuration and safety fixtures for VitalOrbit / Orbit Mafia backend tests.
+"""Pytest configuration and safety fixtures for Orbit Mafia backend tests.
 
 Enforces offline test isolation:
 - Registers the 'live' marker and skips live tests by default unless RUN_LIVE_TESTS=1.

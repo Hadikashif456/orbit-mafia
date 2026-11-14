@@ -1,28 +1,23 @@
 """Crew router providing endpoints for crew resilience summary, vitals, CRI, and biomarkers."""
 
 from typing import List, Optional
-from fastapi import APIRouter, Path, Query, HTTPException, status
-from app.models import CrewSummary, VitalPoint, CRIResult, Biomarker
-from app.security.validators import validate_crew_id, validate_sol, validate_window
-from app.services.cri_engine import compute_cri, get_baseline, compute_inflammation_score
-from app.services.data_access import get_vitals_history, get_biomarkers
+from fastapi import APIRouter, HTTPException, Path, Query, status
+
+from app.models import Biomarker, CRIResult, CrewSummary, VitalPoint
+from app.security.validators import validate_window
+from app.services.crew_service import (
+    CALLSIGNS,
+    compute_cri_for,
+    cri_series,
+    top_driver_label,
+)
+from app.services.data_access import (
+    DataUnavailableError,
+    get_biomarkers,
+    get_vitals_window,
+)
 
 router = APIRouter(prefix="/crew", tags=["Crew"])
-
-
-# ==============================================================================
-# Data Layer Integration Stubs
-# Delegates to data_access service.
-# ==============================================================================
-
-def _get_vitals_history_stub(crew_id: str, sol: int) -> List[VitalPoint]:
-    """Delegates to data_access.get_vitals_history."""
-    return get_vitals_history(crew_id, sol)
-
-
-def _get_biomarkers_stub(crew_id: str) -> List[Biomarker]:
-    """Delegates to data_access.get_biomarkers."""
-    return get_biomarkers(crew_id)
 
 
 @router.get("", response_model=List[CrewSummary])
@@ -30,44 +25,30 @@ def get_crew_summaries(
     sol: Optional[int] = Query(144, ge=1, le=200, description="Mission Sol counter"),
 ) -> List[CrewSummary]:
     """Retrieve resilience status summary for all 4 crew members."""
-    return [
-        CrewSummary(
-            id="C001",
-            callsign="Cmdr A",
-            cri=84.5,
-            status="green",
-            topDriver="Baseline stable",
-            sparkline=[85.0, 84.8, 85.1, 84.6, 84.5],
-            provenance="SYNTHETIC",
-        ),
-        CrewSummary(
-            id="C002",
-            callsign="Cmdr B",
-            cri=61.2,
-            status="amber",
-            topDriver="Radiation event",
-            sparkline=[84.0, 83.2, 82.0, 80.1, 61.2],
-            provenance="SYNTHETIC",
-        ),
-        CrewSummary(
-            id="C003",
-            callsign="Cmdr C",
-            cri=78.0,
-            status="green",
-            topDriver="Mild sleep debt",
-            sparkline=[82.0, 81.0, 80.5, 79.0, 78.0],
-            provenance="SYNTHETIC",
-        ),
-        CrewSummary(
-            id="C004",
-            callsign="Cmdr D",
-            cri=88.0,
-            status="green",
-            topDriver="Optimal vitals",
-            sparkline=[87.0, 87.5, 88.0, 87.9, 88.0],
-            provenance="SYNTHETIC",
-        ),
-    ]
+    current_sol = sol if sol is not None else 144
+    try:
+        summaries: List[CrewSummary] = []
+        for crew_id in ["C001", "C002", "C003", "C004"]:
+            res = compute_cri_for(crew_id, current_sol)
+            spark = cri_series(crew_id, current_sol, n=5)
+            driver = top_driver_label(res)
+            summaries.append(
+                CrewSummary(
+                    id=crew_id,
+                    callsign=CALLSIGNS[crew_id],
+                    cri=res.cri,
+                    status=res.status,
+                    topDriver=driver,
+                    sparkline=spark,
+                    provenance="SYNTHETIC",
+                )
+            )
+        return summaries
+    except DataUnavailableError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable",
+        )
 
 
 @router.get("/{id}/vitals", response_model=List[VitalPoint])
@@ -82,20 +63,14 @@ def get_crew_vitals(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Window must be 7 or 30.",
         )
-
-    return [
-        VitalPoint(
-            crewId=id,
-            sol=sol or 144,
-            hr=72.4,
-            hrv=45.1,
-            sleepHours=5.4,
-            radiationMsv=8.9,
-            exerciseMin=35.0,
-            mood=2,
-            provenance="SYNTHETIC",
+    current_sol = sol if sol is not None else 144
+    try:
+        return get_vitals_window(id, current_sol, window)
+    except DataUnavailableError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable",
         )
-    ]
 
 
 @router.get("/{id}/cri", response_model=CRIResult)
@@ -105,19 +80,13 @@ def get_crew_cri(
 ) -> CRIResult:
     """Retrieve calculated Crew Resilience Index (CRI) and stress term contributions."""
     current_sol = sol if sol is not None else 144
-    vitals_history = _get_vitals_history_stub(id, current_sol)
-    baseline = get_baseline(vitals_history)
-    vitals_window = [v for v in vitals_history if current_sol - 2 <= v.sol <= current_sol]
-    biomarkers = _get_biomarkers_stub(id)
-    inflammation = compute_inflammation_score(biomarkers)
-
-    return compute_cri(
-        vitals_window=vitals_window,
-        baseline=baseline,
-        inflammation_score=inflammation,
-        crew_id=id,
-        sol=current_sol,
-    )
+    try:
+        return compute_cri_for(id, current_sol)
+    except DataUnavailableError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable",
+        )
 
 
 @router.get("/{id}/biomarkers", response_model=List[Biomarker])
@@ -125,27 +94,10 @@ def get_crew_biomarkers(
     id: str = Path(..., pattern=r"^C00[1-4]$", description="Astronaut ID"),
 ) -> List[Biomarker]:
     """Retrieve real NASA OSDR blood biomarkers for this astronaut across mission timepoints."""
-    return [
-        Biomarker(
-            crewId=id,
-            timepoint="L-3",
-            panel="CARDIO_EVE",
-            name="CRP",
-            value=5131700.0,
-            unit="pg/mL",
-            refMin=0.0,
-            refMax=3000000.0,
-            provenance="REAL_OSDR",
-        ),
-        Biomarker(
-            crewId=id,
-            timepoint="L-3",
-            panel="CARDIO_EVE",
-            name="Fibrinogen",
-            value=310.0,
-            unit="mg/dL",
-            refMin=200.0,
-            refMax=400.0,
-            provenance="REAL_OSDR",
-        ),
-    ]
+    try:
+        return get_biomarkers(id)
+    except DataUnavailableError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable",
+        )

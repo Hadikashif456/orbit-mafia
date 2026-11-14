@@ -566,7 +566,7 @@ def test_copilot_rate_limit_reads_from_settings():
     for route in router.routes:
         if route.path == "/copilot/explain":
             assert hasattr(route.endpoint, "_rate_limits") or hasattr(route.endpoint, "__wrapped__")
-    assert settings.RATE_LIMIT_COPILOT in ["10/minute", settings.RATE_LIMIT_COPILOT]
+    assert settings.RATE_LIMIT_COPILOT == "30/minute"
 
 
 @pytest.mark.asyncio
