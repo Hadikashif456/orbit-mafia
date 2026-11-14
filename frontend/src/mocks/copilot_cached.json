@@ -1,26 +1,67 @@
 {
-  "summary": "Cmdr B (C002) experienced cumulative sleep restriction over Sols 141–143 compounded by an acute solar particle event (SPE) at Sol 143, precipitating autonomic strain and a projected CRI decrease below 65.",
-  "drivers": [
-    "Solar particle event radiation spike (9.0 mSv)",
-    "Sleep duration below 6 hours for 3 consecutive sols",
-    "Resting heart rate elevated by +10 bpm over baseline"
-  ],
-  "suggestedActions": [
-    {
-      "title": "Radiation Storm Shelter Protocol",
-      "protocol": "Remain in designated habitat storm shelter module until active dosimeter measures normal transit baseline (<2.0 mSv/day). Reschedule pending EVA spacewalk activities.",
-      "source": "NASA HRP: Space Radiation Bio-Protection Guidelines"
-    },
-    {
-      "title": "Circadian & Sleep Recovery Protocol",
-      "protocol": "Deliver 30 minutes of high-intensity blue-enriched light therapy upon waking. Enforce mandatory 8.5-hour quiet rest opportunity in private crew quarters.",
-      "source": "NASA HRP: Fatigue Management and Countermeasures"
-    }
-  ],
-  "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
-  "groundedIn": [
-    "countermeasures.md#radiation",
-    "countermeasures.md#sleep"
-  ],
-  "mode": "cached"
+  "C002:144": {
+    "summary": "Risk flags identified: elevated cardiovascular strain, sleep deficit, acute radiation exposure, isolation stress, increased inflammatory marker.",
+    "drivers": [
+      "Cardiovascular strain: resting HR elevated (70 bpm) and HRV depressed (50 ms)",
+      "Sleep duration below 6h for consecutive sols (avg 5.4h)",
+      "Solar particle event acute radiation spike (9.0 mSv)",
+      "Reported isolation stress and mood rating decline",
+      "Elevated inflammatory biomarker response (CRP)"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Solar Particle Event Habitat Storm Shelter",
+        "protocol": "Remain in designated habitat storm shelter module until active dosimeter measures normal transit baseline (<2.0 mSv/day); rescheduling pending EVA spacewalk activities suggested for flight surgeon review.",
+        "source": "NASA HRP: Radiation Health Bio-Protection Guidelines"
+      },
+      {
+        "title": "Autonomic Deconditioning and Fluid Rebalancing",
+        "protocol": "Ingestion of monitored fluid and electrolyte countermeasure solutions and use of lower body compression garments suggested for flight surgeon review to relieve cardiac strain.",
+        "source": "NASA HRP: Cardiovascular Deconditioning and Autonomic Regulation"
+      },
+      {
+        "title": "Cardiac Pacing and Workload Adjustment",
+        "protocol": "Operational physical workload reduction and dedicated restorative rest periods suggested for flight surgeon review to support autonomic recovery.",
+        "source": "NASA HRP: Cardiovascular Deconditioning and Autonomic Regulation"
+      }
+    ],
+    "disclaimer": "This output provides risk flags and suggested countermeasures only. It does not constitute a medical diagnosis or treatment plan. Consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#rad-storm-shelter",
+      "countermeasures.md#cardio-fluid-shift",
+      "countermeasures.md#cardio-workload-recovery"
+    ],
+    "mode": "cached"
+  },
+  "C001:140": {
+    "summary": "Elevated inflammatory biomarker response (CRP) and cumulative sleep deficit identified as risk drivers for crew member C001.",
+    "drivers": [
+      "Elevated inflammatory biomarker response (CRP)",
+      "Cumulative sleep deficit"
+    ],
+    "suggestedActions": [
+      {
+        "title": "Circadian & Blue-Enriched Light Therapy",
+        "protocol": "Implement 30-minute high-intensity blue-enriched light therapy upon waking to stabilize circadian entrainment; strict dark and quiet opportunity windows suggested for flight surgeon review.",
+        "source": "NASA HRP: Fatigue Management and Countermeasures"
+      },
+      {
+        "title": "Sleep Hygiene and Opportunity Scheduling",
+        "protocol": "Maintain an 8.5-hour quiet rest opportunity schedule with dimmed cabin ambient lighting; non-critical task deferrals suggested for flight surgeon review.",
+        "source": "NASA HRP: Fatigue Management and Behavioral Health"
+      },
+      {
+        "title": "Deferral of Extravehicular Activities",
+        "protocol": "Postpone pending extravehicular spacewalks during elevated space radiation conditions; limiting personnel proximity to thinly shielded outer habitat hulls suggested for flight surgeon review.",
+        "source": "NASA HRP: Space Radiation Bio-Protection Protocols"
+      }
+    ],
+    "disclaimer": "This guidance is advisory only; consult the flight surgeon when contact is possible.",
+    "groundedIn": [
+      "countermeasures.md#sleep-light-therapy",
+      "countermeasures.md#sleep-hygiene-schedule",
+      "countermeasures.md#rad-eva-defer"
+    ],
+    "mode": "cached"
+  }
 }

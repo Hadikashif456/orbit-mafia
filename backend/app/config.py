@@ -1,9 +1,10 @@
 """Configuration module using pydantic-settings.
 
 Refuses to start in production if ALLOWED_ORIGINS contains wildcard '*'.
+Loads Groq API configurations with optional GROQ_API_KEY to support offline/cached operations.
 """
 
-from typing import List, Union
+from typing import List, Optional, Union
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,9 +17,12 @@ class Settings(BaseSettings):
 
     ENV: str = "dev"
     ALLOWED_ORIGINS: Union[str, List[str]] = "http://localhost:5173"
-    LLM_API_KEY: str = ""
-    LLM_MODEL: str = "claude-3-5-sonnet-20241022"
-    DB_PATH: str = "./vitalorbit.db"
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_FALLBACK_MODEL: str = "openai/gpt-oss-20b"
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
+    GROQ_TIMEOUT_SECONDS: int = 8
+    DB_PATH: str = "./orbit_mafia.db"
     RATE_LIMIT_DEFAULT: str = "60/minute"
     RATE_LIMIT_COPILOT: str = "10/minute"
 
@@ -27,6 +31,11 @@ class Settings(BaseSettings):
         if isinstance(self.ALLOWED_ORIGINS, list):
             return self.ALLOWED_ORIGINS
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def groq_key_present(self) -> bool:
+        """Returns True if GROQ_API_KEY is configured and non-empty."""
+        return bool(self.GROQ_API_KEY and self.GROQ_API_KEY.strip())
 
     def validate_security(self) -> None:
         """Validate security posture, refusing wildcard origins in production."""
