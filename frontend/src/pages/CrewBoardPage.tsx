@@ -1,8 +1,7 @@
-import { useState, type FC } from 'react';
-import { AsciiBackground } from '../components/ascii/AsciiBackground';
-import { DEFAULT_SCENE } from '../components/ascii/asciiRegistry';
+import { useEffect, useState, type FC } from 'react';
 import { GlassSwitcher, type GlassVariant } from '../components/GlassSwitcher';
 import { CrewGrid } from '../components/crew/CrewGrid';
+import { useCosmos } from '../cosmos/CosmosContext';
 import { CREW_MEMBERS } from '../data/crew';
 
 const getSavedGlass = (): GlassVariant => {
@@ -13,10 +12,16 @@ const getSavedGlass = (): GlassVariant => {
 
 export const CrewBoardPage: FC = () => {
   const [glass, setGlass] = useState<GlassVariant>(getSavedGlass);
+  const { scene, setScene } = useCosmos();
+
+  useEffect(() => {
+    const previousScene = scene;
+    setScene('dreamscape');
+    return () => setScene(previousScene);
+  }, [setScene]);
 
   return (
     <section className="crew-board-page" data-glass={glass}>
-      <AsciiBackground scene={DEFAULT_SCENE} />
       <svg className="crew-liquid-filter" aria-hidden="true">
         <defs>
           <filter id="crew-liquid">
