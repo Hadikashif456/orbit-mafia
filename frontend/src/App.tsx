@@ -4,6 +4,7 @@ import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
 import { AstronautDetail } from './pages/AstronautDetail';
+import { AlertScreen } from './pages/AlertScreen';
 import { DemoMode } from './pages/DemoMode';
 import { CosmosProvider } from './cosmos/CosmosContext';
 import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
@@ -63,6 +64,7 @@ const Shell: FC = () => {
           <Route path="/" element={<CrewBoard />} />
           <Route path="/crew" element={<CrewBoardPage />} />
           <Route path="/crew/:id" element={<AstronautDetail />} />
+          <Route path="/alert/:id" element={<AlertScreen />} />
           <Route path="/demo" element={<DemoMode />} />
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
