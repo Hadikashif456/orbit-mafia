@@ -26,7 +26,10 @@ uvicorn app:app --reload
 ## GitHub rules
 
 - Repo name: `orbit-mafia`, public.
-- Main branch: only Hadi merges.
+- Anyone on the team can merge to main.
+- Before you merge, check 3 things: code runs, CRI test passes, tell the group what you merged.
+- If your merge breaks main, fix it right away, or undo it.
+- Do not merge in the last hour without telling Hadi first.
 - Each person works on their own branch, small commits, push often.
 - Never push an unpushed copy overnight.
 - Never copy practice code into this repo. All code here was written Nov 14-15.
