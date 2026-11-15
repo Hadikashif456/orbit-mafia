@@ -137,10 +137,10 @@
 
 .crew-code {
   align-self: flex-end;
-  color: var(--color-text-secondary);
-  font-size: 0.72rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
   letter-spacing: 0.12em;
-  opacity: 0.9;
+  opacity: 1;
 }
 
 .crew-card-heading h2 {
@@ -154,15 +154,15 @@
 
 .crew-card-heading p {
   margin: 0.25rem 0 1.25rem;
-  color: var(--color-text-secondary);
-  font-size: 0.82rem;
-  opacity: 0.95;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  opacity: 1;
 }
 
 .cri-label {
   display: block;
-  color: var(--color-text-secondary);
-  font-size: 0.72rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }

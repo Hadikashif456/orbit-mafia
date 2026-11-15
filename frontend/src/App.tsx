@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Scale,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
@@ -36,6 +37,14 @@ const Shell: FC = () => {
   const location = useLocation();
   const { sol } = useMissionSol();
   const [featuresDrawerOpen, setFeaturesDrawerOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+    }, 600);
+  };
 
   // Close menus on route change
   useEffect(() => {
@@ -89,7 +98,6 @@ const Shell: FC = () => {
 
       {!fullBleed && (
         <>
-
           {/* Navigation header with all features clearly displayed at the top */}
           <header className="glass-nav px-4 sm:px-6 py-2.5">
             <div className="container mx-auto flex items-center justify-between">
@@ -176,7 +184,7 @@ const Shell: FC = () => {
                               Automated astronaut ranking by criticality and rate of change
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -197,7 +205,7 @@ const Shell: FC = () => {
                               Latency buffer simulation with autonomous offline Copilot
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -218,7 +226,7 @@ const Shell: FC = () => {
                               Mission Sol 1–14 baseline bands and anomaly flags
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -239,7 +247,7 @@ const Shell: FC = () => {
                               Print-optimized medical incident debrief and commander signoff
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
                       </div>
                     </div>
@@ -267,7 +275,7 @@ const Shell: FC = () => {
                               Potential CRI points gained per restored factor
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -288,7 +296,7 @@ const Shell: FC = () => {
                               NASA OSDR provenance matrix & scientific boundaries
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -306,7 +314,7 @@ const Shell: FC = () => {
                               Mathematical formulas, weights, and documentation
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
                       </div>
                     </div>
@@ -428,6 +436,21 @@ const Shell: FC = () => {
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
       </main>
+
+      {!fullBleed && (
+        <footer className="border-t border-slate-800/80 bg-slate-950/90 py-4 px-4 sm:px-6 text-center text-xs text-slate-300 font-mono z-20 relative">
+          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span className="text-slate-300 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              ORBIT MAFIA // AUTONOMOUS CREW HEALTH GUARDIAN
+            </span>
+            <span className="text-slate-400">
+              Risk flags and suggested countermeasures only. Not a medical diagnosis.
+            </span>
+            <span className="text-cyan-400/90">SOL {sol} TELEMETRY</span>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };

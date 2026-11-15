@@ -179,7 +179,7 @@ export const DriverTimelineContent: FC = () => {
 
         {/* Warning if 429 or fetch errors occurred on some sols */}
         {errorCount > 0 && (
-          <div className="p-3 bg-amber-950/50 border border-amber-800/60 rounded-lg flex items-center justify-between text-xs text-amber-200">
+          <div className="p-3 bg-slate-900/90 border border-amber-500/40 rounded-lg flex items-center justify-between text-xs text-amber-200">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
               <span>
