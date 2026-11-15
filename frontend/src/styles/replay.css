@@ -289,3 +289,34 @@
   border-radius: 0.5rem;
   padding: 1.25rem;
 }
+
+/* Reduced GPU load during replay playback */
+.replay-container.is-playing .replay-controls-card,
+.replay-container.is-playing .replay-crew-card,
+.replay-container.is-playing .replay-alert-card,
+.replay-container.is-playing .replay-events-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(15, 23, 42, 0.92);
+}
+
+.replay-content-dimmed {
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.replay-content-normal {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .replay-container,
+  .replay-container *,
+  .replay-btn,
+  .replay-content-dimmed,
+  .replay-content-normal {
+    transition: none !important;
+    animation: none !important;
+  }
+}

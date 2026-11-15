@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef, type FC } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCosmos } from '../cosmos/CosmosContext';
 import { EYE } from '../cosmos/scenes';
 import { useMissionSol } from '../context/SolContext';
 import { useScenario } from '../hooks/useScenario';
 import { useCopilot } from '../hooks/useCopilot';
+import { getScenario } from '../api/endpoints';
 import { StatusBadge } from '../components/crew/StatusBadge';
 import { ResilienceBar } from '../components/crew/ResilienceBar';
 import { ProvenanceBadge } from '../components/ProvenanceBadge';
@@ -16,6 +18,7 @@ import type { CopilotResponse } from '../api/types';
 import '../styles/replay.css';
 
 export const DemoMode: FC = () => {
+  const queryClient = useQueryClient();
   const { scene, immersive, scrollProgress, setScene, setImmersive } = useCosmos();
   const { sol: currentContextSol, setSol } = useMissionSol();
 
@@ -25,6 +28,17 @@ export const DemoMode: FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [narrationEnabled, setNarrationEnabled] = useState<boolean>(true);
   const spokenAlertIdsRef = useRef<Set<string>>(new Set());
+
+  // Prefetch scenario for every sol in replay window on mount
+  useEffect(() => {
+    for (let s = REPLAY_FIRST_SOL; s <= REPLAY_LAST_SOL; s++) {
+      queryClient.prefetchQuery({
+        queryKey: ['scenario', s],
+        queryFn: () => getScenario(s),
+        staleTime: 30000,
+      });
+    }
+  }, [queryClient]);
 
   // Cancel any active speech on unmount
   useEffect(() => {
@@ -64,23 +78,34 @@ export const DemoMode: FC = () => {
     };
   }, [scrollProgress, setImmersive, setScene]);
 
-  // 1.5s timer for replay playback
+  // Stop at last sol via dedicated effect (no state side-effects in updaters)
+  useEffect(() => {
+    if (replaySol >= REPLAY_LAST_SOL && isPlaying) {
+      setIsPlaying(false);
+    }
+  }, [replaySol, isPlaying]);
+
+  // 1.5s timer for replay playback; do not advance to an uncached sol
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
       setReplaySol((prev) => {
-        if (prev >= REPLAY_LAST_SOL) {
-          setIsPlaying(false);
+        const next = prev + 1;
+        if (next > REPLAY_LAST_SOL) {
           return prev;
         }
-        return prev + 1;
+        const cached = queryClient.getQueryData(['scenario', next]);
+        if (!cached) {
+          return prev;
+        }
+        return next;
       });
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, queryClient]);
 
-  const { data: scenario, isLoading, isError, error } = useScenario(replaySol);
+  const { data: scenario, isLoading, isFetching, isError, error } = useScenario(replaySol);
 
   // Narration for new alerts while playing
   useEffect(() => {
@@ -100,13 +125,12 @@ export const DemoMode: FC = () => {
     if (replaySol >= REPLAY_LAST_SOL && !isPlaying) {
       setReplaySol(REPLAY_FIRST_SOL);
     }
-    setIsPlaying((prev) => {
-      const next = !prev;
-      if (!next) {
-        cancel();
-      }
-      return next;
-    });
+    if (isPlaying) {
+      cancel();
+      setIsPlaying(false);
+    } else {
+      setIsPlaying(true);
+    }
   };
 
   const handleReset = () => {
@@ -144,7 +168,7 @@ export const DemoMode: FC = () => {
     : [];
 
   return (
-    <div className="replay-container">
+    <div className={`replay-container ${isPlaying ? 'is-playing' : ''}`}>
       <header className="replay-header">
         <span className="replay-eyebrow">Mission Scenario Playback</span>
         <h1>Mission Replay</h1>
@@ -201,18 +225,18 @@ export const DemoMode: FC = () => {
         </div>
       </section>
 
-      {isLoading && (
+      {isLoading && !scenario && (
         <p className="text-sm text-slate-400 mb-6">Loading scenario telemetry for Sol {replaySol}...</p>
       )}
 
-      {isError && (
+      {isError && !scenario && (
         <p className="text-sm text-rose-400 mb-6">
           Failed to load scenario telemetry: {error?.message || 'Scenario data unavailable'}
         </p>
       )}
 
       {scenario && (
-        <>
+        <div className={isFetching ? 'replay-content-dimmed' : 'replay-content-normal'}>
           {/* Crew Status Grid */}
           <section className="mb-8">
             <h2 className="replay-section-title">Crew Resilience Readout (Sol {scenario.sol})</h2>
@@ -362,7 +386,7 @@ export const DemoMode: FC = () => {
               )}
             </div>
           </section>
-        </>
+        </div>
       )}
     </div>
   );
