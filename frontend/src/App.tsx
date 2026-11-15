@@ -11,7 +11,6 @@ import {
   Scale,
   FileText,
 } from 'lucide-react';
-import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
 import { AstronautDetail } from './pages/AstronautDetail';
@@ -94,11 +93,9 @@ const Shell: FC = () => {
 
       {!fullBleed && (
         <>
-          {/* Mandatory safety disclaimer on every data view */}
-          <DisclaimerBar />
 
           {/* Navigation header with all features clearly displayed at the top */}
-          <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 sm:px-6 py-3 sticky top-0 z-50">
+          <header className="glass-nav px-4 sm:px-6 py-2.5">
             <div className="container mx-auto flex items-center justify-between">
               {/* Left: Brand Logo */}
               <div className="flex items-center gap-3 shrink-0">
@@ -113,75 +110,75 @@ const Shell: FC = () => {
 
               {/* Center: Primary Navigation Links */}
               <nav
-                className="hidden md:flex items-center gap-2 lg:gap-4 text-sm font-medium"
+                className="hidden md:flex items-center gap-1 lg:gap-1.5 text-sm font-medium glass-pill-container"
                 aria-label="Main Navigation"
               >
                 <Link
                   to="/crew"
-                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                  className={`py-1.5 px-3 ${
                     isCrewActive
-                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'glass-nav-link-active'
+                      : 'glass-nav-link'
                   }`}
                 >
                   Crew Board
                 </Link>
                 <Link
                   to="/demo"
-                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                  className={`py-1.5 px-3 ${
                     isDemoActive
-                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'glass-nav-link-active'
+                      : 'glass-nav-link'
                   }`}
                 >
                   Mission Replay
                 </Link>
                 <Link
                   to="/triage"
-                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                  className={`py-1.5 px-3 ${
                     isTriageActive
-                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'glass-nav-link-active'
+                      : 'glass-nav-link'
                   }`}
                 >
                   Triage
                 </Link>
                 <Link
                   to="/comms"
-                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                  className={`py-1.5 px-3 ${
                     isCommsActive
-                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'glass-nav-link-active'
+                      : 'glass-nav-link'
                   }`}
                 >
                   Comms Lag
                 </Link>
                 <Link
                   to="/recovery"
-                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                  className={`py-1.5 px-3 ${
                     isRecoveryActive
-                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'glass-nav-link-active'
+                      : 'glass-nav-link'
                   }`}
                 >
                   Recovery
                 </Link>
                 <Link
                   to="/drivers"
-                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                  className={`py-1.5 px-3 ${
                     isDriversActive
-                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'glass-nav-link-active'
+                      : 'glass-nav-link'
                   }`}
                 >
                   Drivers
                 </Link>
                 <Link
                   to="/about"
-                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                  className={`py-1.5 px-3 ${
                     isAboutActive
-                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'glass-nav-link-active'
+                      : 'glass-nav-link'
                   }`}
                 >
                   Data & Method
@@ -195,7 +192,7 @@ const Shell: FC = () => {
                 <button
                   type="button"
                   onClick={() => setFeaturesDrawerOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-700/70 transition-all shadow-sm shadow-cyan-950/50 cursor-pointer"
+                  className="glass-btn-features flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-cyan-300 cursor-pointer"
                   aria-label="Open Features and Tools drawer"
                   aria-expanded={featuresDrawerOpen}
                 >
@@ -204,14 +201,14 @@ const Shell: FC = () => {
                   <span className="sm:hidden">Features</span>
                 </button>
 
-                <div className="text-xs font-mono text-slate-400 px-2.5 py-1 rounded bg-slate-800/80 border border-slate-700/60 shrink-0">
+                <div className="glass-btn-sm text-xs font-mono text-slate-300 px-2.5 py-1 rounded-lg shrink-0">
                   SOL {sol}
                 </div>
 
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen((prev) => !prev)}
-                  className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white bg-slate-800/70 border border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors"
+                  className="glass-btn-sm md:hidden p-2 rounded-lg text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors"
                   aria-label="Toggle navigation menu"
                   aria-expanded={mobileMenuOpen}
                 >
@@ -223,7 +220,7 @@ const Shell: FC = () => {
             {/* Mobile Dropdown Navigation Menu */}
             {mobileMenuOpen && (
               <nav
-                className="md:hidden mt-3 pt-3 border-t border-slate-800/80 flex flex-col gap-1 pb-2 max-h-[75vh] overflow-y-auto"
+                className="glass-dropdown md:hidden mt-3 p-3 rounded-xl flex flex-col gap-1 pb-2 max-h-[75vh] overflow-y-auto"
                 aria-label="Mobile Navigation"
               >
                 <div className="px-3 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
@@ -355,9 +352,9 @@ const Shell: FC = () => {
                 onClick={() => setFeaturesDrawerOpen(false)}
               />
               <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-                <div className="w-screen max-w-md bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl">
+                <div className="w-screen max-w-md glass-dropdown border-l border-white/[0.1] flex flex-col shadow-2xl">
                   {/* Drawer Header */}
-                  <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+                  <div className="p-4 sm:p-6 border-b border-white/[0.08] flex items-center justify-between bg-slate-950/40 backdrop-blur-md">
                     <div className="flex items-center gap-2">
                       <LayoutGrid className="w-5 h-5 text-cyan-400" />
                       <h2 className="text-base font-bold text-white tracking-tight">Features & Advanced Tools</h2>
@@ -568,7 +565,7 @@ const Shell: FC = () => {
       </main>
 
       {!fullBleed && (
-        <footer className="border-t border-slate-800/80 bg-slate-900/60 backdrop-blur py-6 px-4 sm:px-6 mt-auto">
+        <footer className="border-t border-white/[0.08] bg-slate-950/60 backdrop-blur-xl py-6 px-4 sm:px-6 mt-auto shadow-[0_-4px_30px_rgba(0,0,0,0.35),inset_0_1px_0_0_rgba(255,255,255,0.08)]">
           <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <OrbitMafiaLogo className="h-7 w-auto" />

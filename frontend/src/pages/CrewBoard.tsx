@@ -51,7 +51,7 @@ export const CrewBoard: FC = () => {
           className="absolute left-6 sm:left-[8%] top-[25%] sm:top-[30%] max-w-xl z-20"
           style={{ textShadow: '0 2px 28px rgba(0,0,0,0.9)' }}
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/70 text-cyan-300 text-xs font-mono mb-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-badge text-cyan-300 text-xs font-mono mb-4">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
             AUTONOMOUS ASTRONAUT HEALTH GUARDIAN
           </div>
@@ -65,15 +65,16 @@ export const CrewBoard: FC = () => {
           <div className="mt-8 flex items-center gap-4">
             <Link
               to="/crew"
-              className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm sm:text-base shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2 cursor-pointer"
+              className="glass-btn-primary group px-6 py-3 text-sm sm:text-base cursor-pointer"
             >
-              Enter Crew Board →
+              <span>Enter Crew Board</span>
+              <span className="transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true">→</span>
             </Link>
             <Link
               to="/demo"
-              className="px-5 py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-slate-200 font-medium text-sm sm:text-base transition-all cursor-pointer"
+              className="glass-btn-secondary px-5 py-3 text-sm sm:text-base cursor-pointer"
             >
-              Mission Replay
+              <span>Mission Replay</span>
             </Link>
           </div>
         </div>

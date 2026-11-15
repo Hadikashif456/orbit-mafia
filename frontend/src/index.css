@@ -2,6 +2,7 @@
 @import './styles/tokens.css';
 @import './styles/crew.css';
 @import './styles/crew/crew-glass.css';
+@import './styles/glass.css';
 @import './styles/detail/detail-chart.css';
 @import './styles/detail/detail-page.css';
 @import './styles/detail/detail-panels.css';

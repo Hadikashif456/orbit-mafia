@@ -1,7 +1,6 @@
 import { useState, useMemo, type FC } from 'react';
 import { useRecoveryBiomarkers } from '../hooks/useRecoveryBiomarkers';
 import { ProvenanceBadge } from '../components/ProvenanceBadge';
-import { DisclaimerBar } from '../components/DisclaimerBar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { RecoveryChart, type RecoveryChartDataPoint } from '../components/recovery/RecoveryChart';
 import { ReferenceRangeChart } from '../components/recovery/ReferenceRangeChart';
@@ -371,7 +370,6 @@ export const BiomarkerRecoveryContent: FC = () => {
 
       {/* Bottom Mandatory Safety Disclaimer */}
       <footer className="mt-12 pt-6 border-t border-slate-800">
-        <DisclaimerBar />
       </footer>
     </div>
   );
