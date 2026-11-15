@@ -1,47 +1,47 @@
 .detail-screen {
-  height: calc(100dvh - var(--header-h));
-  min-height: 0;
-  overflow: hidden;
+  min-height: calc(100dvh - var(--header-h));
+  overflow-y: auto;
+  overflow-x: hidden;
   background: transparent;
   padding: var(--page-padding-y) var(--page-padding-x);
 }
 
 .detail-screen[data-glass="clear"],
 .detail-screen:not([data-glass]) {
-  --glass-tint: 0.08;
-  --glass-blur: 3px;
+  --glass-tint: 0.84;
+  --glass-blur: 14px;
   --glass-saturate: 130%;
-  --glass-scrim: 0.5;
+  --glass-scrim: 0.75;
 }
 
 .detail-screen[data-glass="frosted"] {
-  --glass-tint: 0.16;
-  --glass-blur: 10px;
+  --glass-tint: 0.88;
+  --glass-blur: 18px;
   --glass-saturate: 140%;
-  --glass-scrim: 0.38;
+  --glass-scrim: 0.80;
 }
 
 .detail-screen[data-glass="liquid"] {
-  --glass-tint: 0.06;
-  --glass-blur: 2px;
-  --glass-saturate: 150%;
-  --glass-scrim: 0.55;
+  --glass-tint: 0.82;
+  --glass-blur: 12px;
+  --glass-saturate: 140%;
+  --glass-scrim: 0.70;
 }
 
 @supports not (backdrop-filter: blur(1px)) {
   .detail-screen[data-glass="clear"],
   .detail-screen[data-glass="frosted"],
   .detail-screen[data-glass="liquid"] {
-    --glass-tint: 0.36;
+    --glass-tint: 0.92;
   }
 }
 
 .detail-layout {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(520px, 1fr);
   gap: var(--card-gap);
   width: min(100%, 1800px);
-  height: 100%;
+  min-height: calc(100dvh - var(--header-h) - (var(--page-padding-y) * 2));
   margin-inline: auto;
 }
 
@@ -53,13 +53,13 @@
 }
 
 .detail-title-row .detail-eyebrow { margin-right: auto; }
-.detail-back-link { color: var(--stardust-lavender); font-size: 13px; text-decoration: none; }
-.detail-back-link:hover { color: var(--supernova-white); }
+.detail-back-link { color: var(--stardust-lavender); font-size: 13px; text-decoration: none; transition: color 0.2s ease; }
+.detail-back-link:hover { color: var(--glacial-cyan, #83e7f5); }
 
 .detail-content-grid {
   display: grid;
   grid-template-columns: var(--detail-columns);
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: minmax(480px, 1fr);
   grid-template-areas: "profile graph info";
   gap: var(--card-gap);
   min-height: 0;

@@ -9,8 +9,10 @@ import { SCENES, getScene } from './scenes';
 import type { SceneId } from './scenes';
 
 const TRANSITION_SECONDS = 2.2;
-const MAX_DPR = 2;
-const MAX_QUALITY_SCALE = 1.6;
+const MAX_DPR = 1.0;
+const TARGET_FPS = 30;
+const FRAME_MIN_MS = 1000 / TARGET_FPS;
+
 /** On the cosmos page, scrolling walks through the scenes in this order. */
 const SCROLL_ORDER: readonly SceneId[] = SCENES.map((s) => s.id);
 const LAST = SCROLL_ORDER.length - 1;
@@ -31,12 +33,13 @@ const easeInOut = (t: number): number => t * t * (3 - 2 * t);
 
 /**
  * The animated ASCII universe, mounted once behind the whole application.
- * It never takes pointer events, so buttons, links, forms and scrolling in the
- * foreground behave exactly as before.
+ * Optimized with 30fps cap, DPR=1, and pause when tab is inactive.
  */
 export const CosmicBackdrop: FC = () => {
-  const isLowPower = useLowPower();
-  const { scene, immersive, scrollProgress, camera } = useCosmos();
+  const isDeviceLowPower = useLowPower();
+  const { scene, immersive, scrollProgress, camera, bgAnimation } = useCosmos();
+  const isLowPower = isDeviceLowPower || !bgAnimation;
+
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const targetRef = useRef<SceneId>(scene);
@@ -55,6 +58,8 @@ export const CosmicBackdrop: FC = () => {
   useEffect(() => camera.attach(window), [camera]);
 
   useEffect(() => {
+    if (isLowPower) return;
+
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
@@ -75,10 +80,9 @@ export const CosmicBackdrop: FC = () => {
     };
     motionQuery.addEventListener('change', onMotionChange);
 
-    let quality = 1;
     const fit = (): void => {
       const rect = container.getBoundingClientRect();
-      renderer.resize(rect.width, rect.height, Math.min(window.devicePixelRatio || 1, MAX_DPR), quality);
+      renderer.resize(rect.width, rect.height, Math.min(window.devicePixelRatio || 1, MAX_DPR), 1);
     };
     fit();
     const observer = new ResizeObserver(fit);
@@ -89,41 +93,33 @@ export const CosmicBackdrop: FC = () => {
     let mix = 0;
     let scrollPos = Math.round(scrollProgress.current * LAST);
     let wasScrollDriven = false;
-    // Reduced motion freezes the scene on a composed frame instead of animating.
     let time = reducedMotion ? 24 : 0;
-    let last = performance.now();
-    let frameAverage = 16;
-    let slowFrames = 0;
+    let lastRenderTime = performance.now();
     let raf = 0;
+
+    const onVisibilityChange = (): void => {
+      if (!document.hidden) {
+        lastRenderTime = performance.now();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     const tick = (now: number): void => {
       raf = requestAnimationFrame(tick);
-      const elapsed = now - last;
-      last = now;
+      if (document.hidden) return;
+
+      const elapsed = now - lastRenderTime;
+      if (elapsed < FRAME_MIN_MS) return;
+      lastRenderTime = now;
+
       const dt = Math.min(elapsed, 50) / 1000;
       if (!reducedMotion) time += dt;
-
-      // Adaptive resolution: if frames stay slow, use larger character cells.
-      if (elapsed < 250) {
-        frameAverage = frameAverage * 0.95 + elapsed * 0.05;
-        slowFrames = frameAverage > 26 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
-        if (slowFrames > 120 && quality < MAX_QUALITY_SCALE) {
-          quality = Math.min(MAX_QUALITY_SCALE, quality * 1.25);
-          slowFrames = 0;
-          frameAverage = 16;
-          fit();
-        }
-      }
 
       let from: SceneId;
       let to: SceneId;
       let blend: number;
       if (immersiveRef.current) {
-        // Cosmos page: the scroll position is the transition. The position
-        // chases the scroll target so wheel steps become one smooth dissolve.
         const goal = scrollGoal(scrollProgress.current);
-        // Arriving on the page (including by a link to a later screen):
-        // start on the right scene instead of dissolving there from the first.
         if (!wasScrollDriven) scrollPos = goal;
         scrollPos += (goal - scrollPos) * (reducedMotion ? 1 : 1 - Math.exp(-4.5 * dt));
         if (Math.abs(goal - scrollPos) < 0.0005) scrollPos = goal;
@@ -135,7 +131,6 @@ export const CosmicBackdrop: FC = () => {
         wasScrollDriven = true;
       } else {
         if (wasScrollDriven) {
-          // Leaving the cosmos page: carry on from whichever scene was showing.
           shown = SCROLL_ORDER[Math.round(scrollPos)];
           incoming = shown;
           mix = 0;
@@ -143,7 +138,6 @@ export const CosmicBackdrop: FC = () => {
         }
         const target = targetRef.current;
         if (target !== incoming) {
-          // A new request mid-transition: settle on whichever scene is dominant.
           if (mix > 0.5) shown = incoming;
           incoming = target;
           mix = 0;
@@ -175,6 +169,7 @@ export const CosmicBackdrop: FC = () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
       motionQuery.removeEventListener('change', onMotionChange);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       renderer.dispose();
     };
   }, [camera, scrollProgress, isLowPower]);
@@ -199,15 +194,16 @@ export const CosmicBackdrop: FC = () => {
   }
 
   const definition = getScene(scene);
+  const showCanvas = !failed;
 
   return (
     <div
       ref={containerRef}
       aria-hidden="true"
       className="fixed inset-0 z-0 overflow-hidden pointer-events-none select-none"
-      style={{ background: failed ? definition.fallback : definition.background }}
+      style={{ background: showCanvas ? definition.background : definition.fallback }}
     >
-      {!failed && <canvas ref={canvasRef} className="block h-full w-full" />}
+      {showCanvas && <canvas ref={canvasRef} className="block h-full w-full" />}
       {/* Scrim: keeps data screens readable; lifts away on the cosmos screens. */}
       <div
         className={clsx(

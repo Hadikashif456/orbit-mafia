@@ -2,25 +2,33 @@
 
 ## Backend (Hadi, with Javeria)
 
-```
+```bash
 cd backend
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+# source .venv/bin/activate
+
 pip install -r requirements.txt
+cp .env.example .env
 python cri.py
-uvicorn app:app --reload
+uvicorn app:app --reload --port 8000
 ```
 
 - `python cri.py` must print `61 amber`.
-- Open http://127.0.0.1:8000/crew
-- You must see 4 astronauts. Astro 2 must be 61, amber.
-- Open http://127.0.0.1:8000/alerts
-- You must see 1 alert for Astro 2.
+- Open http://127.0.0.1:8000/crew (or http://127.0.0.1:8000/api/v1/crew)
+- You must see 4 astronauts. Astro 2 (C002 / Cmdr B) must be ~61, amber.
+- Open http://127.0.0.1:8000/alerts (or http://127.0.0.1:8000/api/v1/scenario/state?sol=144)
+- You must see 1 alert for Astro 2 (C002).
+- API Documentation (Swagger UI): http://127.0.0.1:8000/docs
 
 ## Frontend (Eman)
 
 - React dashboard, 4 screens only.
 - Screen 1: Crew board. Screen 2: Astronaut detail.
 - Screen 3: Risk alert and AI copilot. Screen 4: Demo mode Day 140 to 145.
-- Use the real API above. Do not hard code numbers in the dashboard.
+- Use the real API above (`/api/v1`). Do not hard code numbers in the dashboard.
 - If React is behind at Hour 12, Hadi decides once: React or Streamlit. Never build both.
 
 ## GitHub rules

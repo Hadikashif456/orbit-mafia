@@ -229,7 +229,7 @@ export class CameraController {
       if (direction) this.held[direction] = false;
     };
     const onPointerMove = (e: PointerEvent): void => {
-      if (e.pointerType === 'touch') return;
+      if (e.pointerType === 'touch' || !this.interactive) return;
       this.setPointer((e.clientX / target.innerWidth) * 2 - 1, (e.clientY / target.innerHeight) * 2 - 1);
       if (dragging) {
         // Dragging up moves in, dragging down moves out.

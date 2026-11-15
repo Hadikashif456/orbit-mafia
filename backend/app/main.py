@@ -97,9 +97,39 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 # Root Health Check
 @app.get("/api/v1/health", tags=["Health"])
+@app.get("/health", include_in_schema=False)
 def health_check():
     """Health check endpoint confirming service readiness."""
     return {"status": "ok"}
+
+
+@app.get("/", tags=["Root"])
+def root_info():
+    """Service info and entrypoint."""
+    return {
+        "app": "Orbit Mafia",
+        "status": "ok",
+        "version": "1.0.0",
+        "docs": "/docs" if settings.ENV != "prod" else None,
+        "api": "/api/v1",
+    }
+
+
+@app.get("/crew", include_in_schema=False)
+def get_crew_alias(sol: int = 144):
+    """Compatibility alias for /api/v1/crew."""
+    from app.routers.crew import get_crew_summaries
+    return get_crew_summaries(sol=sol)
+
+
+@app.get("/alerts", include_in_schema=False)
+@app.get("/api/v1/alerts", tags=["Alerts"])
+def get_alerts_alias(sol: int = 144):
+    """Active scenario alerts (defaults to Sol 144)."""
+    from app.services.scenario_engine import get_scenario_state
+    safe_sol = min(max(140, sol), 145)
+    state = get_scenario_state(safe_sol)
+    return {"alerts": state.alerts, "sol": safe_sol}
 
 
 # Dependency Health Check

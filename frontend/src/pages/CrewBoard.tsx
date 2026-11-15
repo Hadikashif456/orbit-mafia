@@ -1,4 +1,5 @@
 import { useEffect, type FC } from 'react';
+import { Link } from 'react-router-dom';
 import { CosmicDreamscape } from '../cosmos/CosmicDreamscape';
 import { useCosmos } from '../cosmos/CosmosContext';
 import { ObsidianSolaris } from '../cosmos/ObsidianSolaris';
@@ -47,16 +48,34 @@ export const CrewBoard: FC = () => {
       <div className="relative">
         <ObsidianSolaris />
         <div
-          className="pointer-events-none absolute left-5 top-[16%] sm:left-[6%] sm:top-[34%]"
+          className="absolute left-6 sm:left-[8%] top-[25%] sm:top-[30%] max-w-xl z-20"
           style={{ textShadow: '0 2px 28px rgba(0,0,0,0.9)' }}
         >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/70 text-cyan-300 text-xs font-mono mb-4">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            AUTONOMOUS ASTRONAUT HEALTH GUARDIAN
+          </div>
           <h1 className="text-5xl font-black uppercase leading-none tracking-tight text-white sm:text-6xl lg:text-7xl">
             Orbit Mafia
           </h1>
-          <p className="mt-4 max-w-[19rem] font-serif text-lg italic leading-snug text-slate-200 sm:mt-5 sm:max-w-[24rem] sm:text-xl lg:text-2xl">
+          <p className="mt-4 max-w-[22rem] font-serif text-lg italic leading-snug text-slate-200 sm:mt-5 sm:max-w-[28rem] sm:text-xl lg:text-2xl">
             In the Silence of Space,{' '}
             <span className="whitespace-nowrap text-[#F4D6A3]">Every Heartbeat Matters.</span>
           </p>
+          <div className="mt-8 flex items-center gap-4">
+            <Link
+              to="/crew"
+              className="px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm sm:text-base shadow-lg shadow-cyan-500/25 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              Enter Crew Board →
+            </Link>
+            <Link
+              to="/demo"
+              className="px-5 py-3 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-slate-200 font-medium text-sm sm:text-base transition-all cursor-pointer"
+            >
+              Mission Replay
+            </Link>
+          </div>
         </div>
       </div>
       <CosmicDreamscape />

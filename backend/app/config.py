@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     ENV: str = "dev"
-    ALLOWED_ORIGINS: Union[str, List[str]] = "http://localhost:5173"
+    ALLOWED_ORIGINS: Union[str, List[str]] = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
     GROQ_API_KEY: Optional[str] = None
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     GROQ_FALLBACK_MODEL: str = "openai/gpt-oss-20b"

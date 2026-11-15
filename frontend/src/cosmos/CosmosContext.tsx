@@ -19,6 +19,8 @@ interface CosmosValue {
    */
   scrollProgress: MutableRefObject<number>;
   camera: CameraController;
+  bgAnimation: boolean;
+  setBgAnimation: (enabled: boolean) => void;
 }
 
 const CosmosContext = createContext<CosmosValue | null>(null);
@@ -35,9 +37,19 @@ export const CosmosProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [immersive, setImmersive] = useState(false);
   const scrollProgress = useRef(0);
   const camera = useMemo(() => new CameraController(), []);
+  const [bgAnimation, setBgAnimationState] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.localStorage.getItem('orbit-bg-anim') !== 'false';
+  });
+  const setBgAnimation = (enabled: boolean) => {
+    setBgAnimationState(enabled);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('orbit-bg-anim', enabled ? 'true' : 'false');
+    }
+  };
   const value = useMemo(
-    () => ({ scene, setScene, immersive, setImmersive, scrollProgress, camera }),
-    [scene, immersive, camera],
+    () => ({ scene, setScene, immersive, setImmersive, scrollProgress, camera, bgAnimation, setBgAnimation }),
+    [scene, immersive, camera, bgAnimation],
   );
   return <CosmosContext.Provider value={value}>{children}</CosmosContext.Provider>;
 };

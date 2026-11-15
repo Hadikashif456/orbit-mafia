@@ -1,23 +1,23 @@
 .crew-board-page[data-glass="clear"],
 .crew-board-page:not([data-glass]) {
-  --glass-tint: 0.14;
-  --glass-blur: 3px;
+  --glass-tint: 0.84;
+  --glass-blur: 14px;
   --glass-saturate: 130%;
-  --glass-scrim: 0.45;
+  --glass-scrim: 0.75;
 }
 
 .crew-board-page[data-glass="frosted"] {
-  --glass-tint: 0.22;
-  --glass-blur: 10px;
+  --glass-tint: 0.88;
+  --glass-blur: 18px;
   --glass-saturate: 140%;
-  --glass-scrim: 0.3;
+  --glass-scrim: 0.80;
 }
 
 .crew-board-page[data-glass="liquid"] {
-  --glass-tint: 0.1;
-  --glass-blur: 2px;
-  --glass-saturate: 150%;
-  --glass-scrim: 0.5;
+  --glass-tint: 0.82;
+  --glass-blur: 12px;
+  --glass-saturate: 140%;
+  --glass-scrim: 0.70;
 }
 
 @supports ((backdrop-filter: url("#crew-liquid")) or (-webkit-backdrop-filter: url("#crew-liquid"))) {
@@ -29,10 +29,10 @@
 
 @supports not ((backdrop-filter: url("#crew-liquid")) or (-webkit-backdrop-filter: url("#crew-liquid"))) {
   .crew-board-page[data-glass="liquid"] {
-    --glass-tint: 0.14;
-    --glass-blur: 3px;
+    --glass-tint: 0.84;
+    --glass-blur: 14px;
     --glass-saturate: 130%;
-    --glass-scrim: 0.45;
+    --glass-scrim: 0.75;
   }
 }
 
@@ -40,16 +40,16 @@
   .crew-board-page[data-glass="clear"],
   .crew-board-page[data-glass="frosted"],
   .crew-board-page[data-glass="liquid"] {
-    --glass-tint: 0.45;
+    --glass-tint: 0.92;
   }
 }
 
 @media (max-width: 767px) {
   .crew-board-page[data-glass="frosted"],
   .crew-board-page[data-glass="liquid"] {
-    --glass-tint: 0.14;
-    --glass-blur: 3px;
+    --glass-tint: 0.86;
+    --glass-blur: 10px;
     --glass-saturate: 130%;
-    --glass-scrim: 0.45;
+    --glass-scrim: 0.75;
   }
 }

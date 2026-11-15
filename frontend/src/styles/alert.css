@@ -12,12 +12,12 @@
   min-height: min(680px, calc(100dvh - var(--header-h) - 14vh));
   margin: auto;
   padding: clamp(22px, 4vw, 52px);
-  background: rgba(3, 2, 10, 0.18);
+  background: rgba(11, 15, 30, 0.88);
   border: 1px solid color-mix(in srgb, var(--alert-color) 72%, transparent);
   border-radius: var(--card-radius);
-  box-shadow: 0 0 42px color-mix(in srgb, var(--alert-color) 32%, transparent), inset 0 1px 0 color-mix(in srgb, var(--alert-color) 38%, transparent);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: 0 8px 36px rgba(0, 0, 0, 0.5), 0 0 32px color-mix(in srgb, var(--alert-color) 24%, transparent), inset 0 1px 0 color-mix(in srgb, var(--alert-color) 38%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(var(--glass-saturate));
+  backdrop-filter: blur(14px) saturate(var(--glass-saturate));
 }
 
 .alert-card--amber { --alert-color: var(--status-watch); }
@@ -33,15 +33,21 @@
 .alert-card h1 {
   margin: 8px 0 0;
   color: var(--alert-color);
-  font-size: clamp(36px, 6vw, 72px);
-  font-weight: 300;
-  text-shadow: 0 0 22px color-mix(in srgb, var(--alert-color) 60%, transparent);
+  font-size: clamp(36px, 6vw, 68px);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--alert-color) 35%, transparent);
 }
 
 .alert-back-link {
   color: var(--stardust-lavender);
   font-size: 13px;
   text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.alert-back-link:hover {
+  color: var(--glacial-cyan, #83e7f5);
 }
 
 .alert-summary {
@@ -49,6 +55,7 @@
   margin: clamp(18px, 4vh, 34px) 0;
   color: var(--supernova-white);
   font-size: clamp(15px, 1.5vw, 19px);
+  line-height: 1.5;
 }
 
 .alert-columns {
@@ -71,7 +78,7 @@
   margin: 0 0 22px;
   color: var(--alert-color);
   font-size: clamp(20px, 2.5vw, 30px);
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .alert-columns ul,
@@ -107,8 +114,9 @@
 .alert-disclaimer {
   margin: 24px 0 0;
   color: var(--stardust-lavender);
-  font: 11px "JetBrains Mono", Menlo, Consolas, monospace;
-  opacity: 0.8;
+  font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  opacity: 0.85;
 }
 
 @media (max-width: 700px) {

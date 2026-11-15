@@ -489,7 +489,7 @@ async def _call_groq_api(
                 )
                 return None
 
-            async with httpx.AsyncClient(timeout=float(settings.GROQ_TIMEOUT_SECONDS)) as client:
+            async with httpx.AsyncClient(timeout=float(settings.GROQ_TIMEOUT_SECONDS)) as client:  # nosec B113
                 for idx, model in enumerate(models_to_try):
                     payload = {
                         "model": model,
@@ -504,7 +504,7 @@ async def _call_groq_api(
                     }
 
                     try:
-                        response = await client.post(api_url, headers=headers, json=payload)
+                        response = await client.post(api_url, headers=headers, json=payload, timeout=float(settings.GROQ_TIMEOUT_SECONDS))
                     except (httpx.TimeoutException, httpx.RequestError) as exc:
                         logger.warning("Groq call failed for model %s: %s", model, type(exc).__name__)
                         if idx == 0:

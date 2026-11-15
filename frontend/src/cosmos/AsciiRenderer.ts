@@ -22,8 +22,8 @@ export const GLYPHS: readonly string[] = [
 const FONT_STACK = 'ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace';
 
 /** Character cell sizes in CSS px. Far glyphs are smaller: size encodes depth. */
-const NEAR_CELL: readonly [number, number] = [6, 11];
-const FAR_CELL: readonly [number, number] = [4, 8];
+const NEAR_CELL: readonly [number, number] = [8, 14];
+const FAR_CELL: readonly [number, number] = [6, 11];
 
 export interface FrameParams {
   time: number;

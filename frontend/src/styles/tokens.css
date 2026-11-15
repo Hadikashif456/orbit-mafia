@@ -7,12 +7,12 @@
   --card-radius: 16px;
   --card-padding: clamp(16px, 2vw, 24px);
   --card-border-width: 1px;
-  --glass-body-rgb: 3, 2, 10;
-  --glass-tint: 0.14;
-  --glass-blur: 3px;
+  --glass-body-rgb: 8, 12, 24;
+  --glass-tint: 0.84;
+  --glass-blur: 14px;
   --glass-saturate: 130%;
-  --glass-scrim: 0.45;
+  --glass-scrim: 0.75;
   --color-text-primary: var(--supernova-white);
   --color-text-secondary: var(--stardust-lavender);
-  --text-shadow-soft: 0 1px 8px rgba(3, 2, 10, 0.9);
+  --text-shadow-soft: none;
 }
