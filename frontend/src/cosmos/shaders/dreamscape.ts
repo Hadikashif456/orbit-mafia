@@ -50,6 +50,13 @@ vec3 ringColor(float rho, float grain) {
   return mix(c, WHITE, smoothstep(0.75, 1.0, grain) * 0.6);
 }
 
+// Slow wander of a distant world around its rest position, so the sky is
+// never perfectly still. Each seed gets its own path and pace.
+vec2 wander(float seed, float amp) {
+  return amp * vec2(sin(uTime * (0.050 + 0.011 * seed) + seed * 2.1),
+                    cos(uTime * (0.037 + 0.008 * seed) + seed * 1.3));
+}
+
 // A small distant world: banded sphere with a soft terminator and lit limb.
 bool smallPlanet(vec2 l, float r, float seed, vec3 cA, vec3 cB,
                  inout vec3 col, inout float lum, inout float sp) {
@@ -59,7 +66,7 @@ bool smallPlanet(vec2 l, float r, float seed, vec3 cA, vec3 cB,
     vec3 n = vec3(l / r, sqrt(max(0.0, 1.0 - d * d / (r * r))));
     vec3 ps = n;
     ps.xy = rot2(0.5 * sin(seed * 7.0)) * ps.xy;
-    ps.xz = rot2(uTime * 0.03 + seed) * ps.xz;
+    ps.xz = rot2(uTime * 0.11 + seed) * ps.xz;
     float tex = fbm3(ps * vec3(2.5, 7.0, 2.5) + seed * 10.0);
     float band = 0.5 + 0.5 * sin(ps.y * 8.0 + tex * 3.0 + seed);
     float ndl = dot(n, KEY_LIGHT);
@@ -90,7 +97,7 @@ void sceneFar(vec2 p, out vec3 col, out float lum, out float sp) {
   // ---- Nebulae: domain-warped gas flowing along a diagonal river ----------
   vec2 q = layerUV(p, 9.0);
   vec2 w = q * 1.45 + vec2(3.1, -1.7);
-  vec2 fl = vec2(fbm(w + vec2(0.0, t * 0.010)), fbm(w + vec2(5.2, 1.3) - vec2(t * 0.008, 0.0)));
+  vec2 fl = vec2(fbm(w + vec2(0.0, t * 0.022)), fbm(w + vec2(5.2, 1.3) - vec2(t * 0.018, 0.0)));
   vec2 w2 = w + 1.5 * (fl - 0.5);
   float n = fbm(w2 * 1.25 + vec2(1.7, 9.2));
   float diag = dot(q - vec2(0.06, 0.0), normalize(vec2(-0.5, 0.86)));
@@ -110,13 +117,15 @@ void sceneFar(vec2 p, out vec3 col, out float lum, out float sp) {
   float gr = length(g) / 0.58;
   float th = atan(g.y, g.x);
   float wob = (fbm(g * 3.0 + 4.0) - 0.5) * 0.9;
-  float sw = 2.0 * th - 4.6 * log(gr + 0.04) + t * 0.045 + wob;
+  float sw = 2.0 * th - 4.6 * log(gr + 0.04) + t * 0.09 + wob;
   float arm = pow(0.5 + 0.5 * cos(sw), 3.0);
   float gtex = fbm(g * 9.0 + vec2(2.0, 5.0));
   float fall = exp(-gr * 2.0) * smoothstep(1.25, 0.6, gr);
   float lane = pow(0.5 + 0.5 * cos(sw + 2.4), 5.0) * smoothstep(0.42, 0.7, gtex);
   float gal = fall * (0.05 + 1.5 * arm * (0.45 + 0.9 * gtex)) * (1.0 - 0.7 * lane);
-  float bulge = exp(-gr * gr * 60.0) * 0.75 + exp(-gr * 7.0) * 0.35;
+  // The core breathes: a slow, slightly irregular pulse.
+  float pulse = 1.0 + 0.10 * sin(t * 0.55) + 0.05 * sin(t * 1.3 + 1.7);
+  float bulge = (exp(-gr * gr * 60.0) * 0.75 + exp(-gr * 7.0) * 0.35) * pulse;
   float gl = clamp(gal + bulge, 0.0, 1.2);
   vec3 gc = mix(ORCHID, LAVENDER, smoothstep(0.08, 0.45, gl));
   gc = mix(gc, CYAN, smoothstep(0.40, 0.95, gr) * 0.75);
@@ -175,15 +184,15 @@ void sceneFar(vec2 p, out vec3 col, out float lum, out float sp) {
   // ---- Distant planets ----------------------------------------------------
   float ax = gAspect / 1.78;
   vec2 l;
-  l = layerUV(p, 5.0) - vec2(0.02 * ax, 0.37);
+  l = layerUV(p, 5.0) - vec2(0.02 * ax, 0.37) - wander(1.0, 0.010);
   smallPlanet(l, 0.036, 1.0, LAVENDER, AMETHYST, col, lum, sp);
-  l = layerUV(p, 3.0) - vec2(0.76 * ax, -0.06);
+  l = layerUV(p, 3.0) - vec2(0.76 * ax, -0.06) - wander(3.0, 0.016);
   smallPlanet(l, 0.078, 3.0, ROSE, AMETHYST, col, lum, sp);
-  l = layerUV(p, 4.2) - vec2(0.50 * ax, -0.36);
+  l = layerUV(p, 4.2) - vec2(0.50 * ax, -0.36) - wander(4.0, 0.012);
   smallPlanet(l, 0.040, 4.0, GOLD, ROSE * 0.6, col, lum, sp);
 
   // A small ringed world, upper right.
-  l = layerUV(p, 3.6) - vec2(0.47 * ax, 0.33);
+  l = layerUV(p, 3.6) - vec2(0.47 * ax, 0.33) - wander(2.0, 0.012);
   float pr = 0.056;
   bool hit = smallPlanet(l, pr, 2.0, CYAN, ORCHID, col, lum, sp);
   vec2 rl = rot2(-0.45) * l;
@@ -200,8 +209,9 @@ void sceneFar(vec2 p, out vec3 col, out float lum, out float sp) {
   }
 
   // ---- Rare shooting stars ------------------------------------------------
-  meteor(p, 19.0, 1.0, LAVENDER, WHITE, col, lum, sp);
-  meteor(p, 31.0, 2.0, CYAN, WHITE, col, lum, sp);
+  meteor(p, 11.0, 1.0, LAVENDER, WHITE, col, lum, sp);
+  meteor(p, 17.0, 2.0, CYAN, WHITE, col, lum, sp);
+  meteor(p, 23.0, 3.0, ROSE, WHITE, col, lum, sp);
 }
 
 void sceneNear(vec2 p, out vec3 col, out float lum, out float sp, out float cover) {
@@ -213,7 +223,8 @@ void sceneNear(vec2 p, out vec3 col, out float lum, out float sp, out float cove
   // ---- The giant ringed planet, left of frame -----------------------------
   float D = 1.6;
   float sc = clamp(gAspect / 1.5, 0.62, 1.0);
-  vec2 c = vec2(mix(-0.02, -0.5 * gAspect + 0.40, smoothstep(0.7, 1.5, gAspect)), 0.06);
+  vec2 c = vec2(mix(-0.02, -0.5 * gAspect + 0.40, smoothstep(0.7, 1.5, gAspect)),
+                0.06 + 0.007 * sin(uTime * 0.11));
   float r = 0.235 * sc;
   vec2 l = layerUV(p, D) - c;
   if (length(l) > r * 2.6) return;
@@ -239,9 +250,9 @@ void sceneNear(vec2 p, out vec3 col, out float lum, out float sp, out float cove
   if (inDisc) {
     vec3 n = vec3(l, zs) / r;
     vec3 ps0 = vec3(dot(n, ex), dot(n, N), dot(n, ez));
-    float a = uTime * 0.035;
+    float a = uTime * 0.06;
     vec3 ps = vec3(ps0.x * cos(a) + ps0.z * sin(a), ps0.y, -ps0.x * sin(a) + ps0.z * cos(a));
-    float evo = uTime * 0.006;
+    float evo = uTime * 0.012;
     float warp = fbm3(ps * vec3(2.2, 5.0, 2.2) + vec3(0.0, evo, 0.0));
     float lat = ps.y;
     float bands = 0.5 + 0.5 * sin(lat * 15.0 + (warp - 0.5) * 5.0);
@@ -288,7 +299,7 @@ void sceneNear(vec2 p, out vec3 col, out float lum, out float sp, out float cove
     float idr = floor(rho * 64.0);
     float M = 220.0;
     // Keplerian: inner ringlets orbit faster than outer ones.
-    float om = 0.05 * pow(rho, -1.5);
+    float om = 0.09 * pow(rho, -1.5);
     float gx = (phi / TAU + 0.5) * M + uTime * om * M / TAU + hash11(idr) * M;
     float grain = pnoise1(gx, M, idr);
     // Planet's shadow across the rings.
