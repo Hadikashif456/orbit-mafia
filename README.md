@@ -282,11 +282,10 @@ Orbit Mafia is a hackathon prototype. It **does not diagnose, detect, or treat a
 | Role | Name |
 |---|---|
 | Creative Technical Strategist | Hijab |
-| FFrontend Experience Architect | Eman Fatima |
+| Frontend Experience Architect | Eman Fatima |
 | Backend Logic Specialist | Hadi |
 | Backend Integration Specialist | Javeria |
-| Backend Systems Architect | Amina |
-
+| Testing / Backend | Amina Ahsan |
 
 ```
         .  *   .      "Ad astra per aspera"      .   *  .
