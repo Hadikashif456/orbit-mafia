@@ -1,6 +1,6 @@
 import { useState, useEffect, type FC } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
@@ -25,10 +25,12 @@ const Shell: FC = () => {
   const location = useLocation();
   const { sol } = useMissionSol();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopMoreOpen, setDesktopMoreOpen] = useState(false);
 
-  // Close mobile navigation menu on route change
+  // Close navigation menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
+    setDesktopMoreOpen(false);
   }, [location.pathname]);
 
   // The cosmos page is a full-bleed visual with no health data on it, so it
@@ -50,6 +52,13 @@ const Shell: FC = () => {
   const isBaselinesActive = location.pathname.startsWith('/baselines');
   const isTrustActive = location.pathname === '/trust';
   const isReportActive = location.pathname.startsWith('/report');
+  const isAnyMoreActive =
+    isTriageActive ||
+    isCommsActive ||
+    isLeversActive ||
+    isBaselinesActive ||
+    isTrustActive ||
+    isReportActive;
 
   return (
     <div className="relative z-10 min-h-screen flex flex-col text-slate-100">
@@ -113,42 +122,108 @@ const Shell: FC = () => {
                   >
                     Drivers
                   </Link>
-                  <Link
-                    to="/triage"
-                    className={`${isTriageActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Triage
-                  </Link>
-                  <Link
-                    to="/comms"
-                    className={`${isCommsActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Comms
-                  </Link>
-                  <Link
-                    to="/levers"
-                    className={`${isLeversActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Levers
-                  </Link>
-                  <Link
-                    to="/baselines/C001"
-                    className={`${isBaselinesActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Baselines
-                  </Link>
-                  <Link
-                    to="/trust"
-                    className={`${isTrustActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Data Trust
-                  </Link>
-                  <Link
-                    to="/report/C001"
-                    className={`${isReportActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Report
-                  </Link>
+
+                  {/* "More" Dropdown Menu for New Features */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setDesktopMoreOpen((prev) => !prev)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
+                        isAnyMoreActive
+                          ? 'text-cyan-400 bg-slate-800/80 border border-cyan-800/60'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                      }`}
+                      aria-expanded={desktopMoreOpen}
+                      aria-haspopup="true"
+                    >
+                      <span>More</span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform ${
+                          desktopMoreOpen ? 'rotate-180 text-cyan-400' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {desktopMoreOpen && (
+                      <div
+                        className="absolute right-0 mt-2 w-48 rounded-lg bg-slate-900 border border-slate-800 shadow-xl py-1.5 z-50 backdrop-blur"
+                        role="menu"
+                      >
+                        <Link
+                          to="/triage"
+                          onClick={() => setDesktopMoreOpen(false)}
+                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
+                            isTriageActive
+                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                          role="menuitem"
+                        >
+                          Triage Queue
+                        </Link>
+                        <Link
+                          to="/comms"
+                          onClick={() => setDesktopMoreOpen(false)}
+                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
+                            isCommsActive
+                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                          role="menuitem"
+                        >
+                          Comms Simulation
+                        </Link>
+                        <Link
+                          to="/levers"
+                          onClick={() => setDesktopMoreOpen(false)}
+                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
+                            isLeversActive
+                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                          role="menuitem"
+                        >
+                          Recovery Levers
+                        </Link>
+                        <Link
+                          to="/baselines/C001"
+                          onClick={() => setDesktopMoreOpen(false)}
+                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
+                            isBaselinesActive
+                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                          role="menuitem"
+                        >
+                          Personal Baselines
+                        </Link>
+                        <Link
+                          to="/trust"
+                          onClick={() => setDesktopMoreOpen(false)}
+                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
+                            isTrustActive
+                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                          role="menuitem"
+                        >
+                          Data Trust Panel
+                        </Link>
+                        <Link
+                          to="/report/C001"
+                          onClick={() => setDesktopMoreOpen(false)}
+                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
+                            isReportActive
+                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                          }`}
+                          role="menuitem"
+                        >
+                          Incident Report
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </nav>
               </div>
 
