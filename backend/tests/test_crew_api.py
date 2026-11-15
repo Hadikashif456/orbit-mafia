@@ -287,3 +287,36 @@ def test_trend_endpoint_windows_and_consistency(client):
 
     # 6. Bad crew ID gives 422
     assert client.get("/api/v1/crew/C999/trend").status_code == 422
+
+
+def test_cri_range_endpoint_and_validation(client):
+    """GET /api/v1/crew/{id}/cri/range returns contiguous list of CRIResults and enforces validation."""
+    # 1. Valid range 100 to 145 (46 sols)
+    resp = client.get("/api/v1/crew/C001/cri/range?from=100&to=145")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    assert len(data) == 46
+    assert data[0]["sol"] == 100
+    assert data[-1]["sol"] == 145
+    assert data[0]["crewId"] == "C001"
+    assert "contributions" in data[0]
+    assert "cri" in data[0]
+
+    # Verify Sol 144 matches direct /cri endpoint
+    direct_144 = client.get("/api/v1/crew/C001/cri?sol=144").json()
+    range_144 = next(item for item in data if item["sol"] == 144)
+    assert abs(range_144["cri"] - direct_144["cri"]) <= 0.01
+
+    # 2. Invalid from > to gives 422
+    assert client.get("/api/v1/crew/C001/cri/range?from=140&to=100").status_code == 422
+
+    # 3. Exceeds max 60 sols gives 422
+    assert client.get("/api/v1/crew/C001/cri/range?from=100&to=165").status_code == 422
+
+    # 4. Sol out of bounds gives 422
+    assert client.get("/api/v1/crew/C001/cri/range?from=0&to=50").status_code == 422
+    assert client.get("/api/v1/crew/C001/cri/range?from=150&to=205").status_code == 422
+
+    # 5. Invalid crew id gives 422
+    assert client.get("/api/v1/crew/C005/cri/range?from=100&to=110").status_code == 422

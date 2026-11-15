@@ -27,7 +27,7 @@ export class ApiError extends Error {
 }
 
 function resolveMockData(path: string): unknown {
-  const cleanPath = path.split('?')[0];
+  const [cleanPath, queryStr] = path.split('?');
   if (cleanPath === '/crew') {
     return crewMock;
   }
@@ -42,6 +42,78 @@ function resolveMockData(path: string): unknown {
   }
   if (cleanPath === '/copilot/explain') {
     return copilotCachedMock;
+  }
+  if (cleanPath.startsWith('/crew/') && cleanPath.endsWith('/cri/range')) {
+    const parts = cleanPath.split('/');
+    const crewId = parts[2] || 'C001';
+    const params = new URLSearchParams(queryStr || '');
+    const fromSol = Number(params.get('from')) || 100;
+    const toSol = Number(params.get('to')) || 145;
+    const list = [];
+    for (let s = fromSol; s <= toSol; s++) {
+      list.push({
+        crewId,
+        sol: s,
+        cri: s === 144 ? 61.2 : 84.5,
+        status: s === 144 ? 'amber' : 'green',
+        contributions: {
+          radiation: s === 143 ? 8.5 : 1.2,
+          sleep: s >= 143 ? 5.2 : 1.8,
+          cardio: s >= 143 ? 4.1 : 1.5,
+          mood: s >= 143 ? 3.2 : 0.8,
+          inflammation: 2.1,
+        },
+        weights: {
+          radiation: 0.25,
+          sleep: 0.25,
+          cardio: 0.2,
+          mood: 0.15,
+          inflammation: 0.15,
+        },
+        formulaVersion: 'v1',
+        provenance: 'SYNTHETIC+REAL_OSDR',
+      });
+    }
+    return list;
+  }
+  if (cleanPath.startsWith('/crew/') && cleanPath.endsWith('/cri')) {
+    const parts = cleanPath.split('/');
+    const crewId = parts[2] || 'C001';
+    const params = new URLSearchParams(queryStr || '');
+    const sol = Number(params.get('sol')) || 144;
+    return {
+      crewId,
+      sol,
+      cri: crewId === 'C002' && sol >= 143 ? 61.2 : 84.5,
+      status: crewId === 'C002' && sol >= 143 ? 'amber' : 'green',
+      contributions: {
+        radiation: crewId === 'C002' && sol === 143 ? 8.5 : 1.2,
+        sleep: crewId === 'C002' && sol >= 143 ? 5.2 : 1.8,
+        cardio: crewId === 'C002' && sol >= 143 ? 4.1 : 1.5,
+        mood: crewId === 'C002' && sol >= 143 ? 3.2 : 0.8,
+        inflammation: 2.1,
+      },
+      weights: {
+        radiation: 0.25,
+        sleep: 0.25,
+        cardio: 0.2,
+        mood: 0.15,
+        inflammation: 0.15,
+      },
+      formulaVersion: 'v1',
+      provenance: 'SYNTHETIC+REAL_OSDR',
+    };
+  }
+  if (cleanPath.startsWith('/crew/') && cleanPath.endsWith('/trend')) {
+    return [
+      { sol: 138, cri: 85.0, status: 'green' },
+      { sol: 139, cri: 84.8, status: 'green' },
+      { sol: 140, cri: 85.1, status: 'green' },
+      { sol: 141, cri: 84.6, status: 'green' },
+      { sol: 142, cri: 84.5, status: 'green' },
+      { sol: 143, cri: 80.2, status: 'green' },
+      { sol: 144, cri: 61.2, status: 'amber' },
+    ];
   }
   return undefined;
 }

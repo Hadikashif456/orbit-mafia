@@ -33,3 +33,25 @@ uvicorn app:app --reload
 - Each person works on their own branch, small commits, push often.
 - Never push an unpushed copy overnight.
 - Never copy practice code into this repo. All code here was written Nov 14-15.
+
+## Voice Narration (Web Speech Synthesis)
+
+- **User Gesture Requirement**: Speech synthesis requires a user gesture (click or tap) before speech can be unlocked. The app primes the audio subsystem during user interactions (e.g., clicking "Play", "Ask Copilot", or "Read aloud").
+- **Browser Voice Differences**: Voices available in Chrome, Edge, Firefox, and Safari differ based on OS and browser speech synthesis engine implementations (e.g., local vs remote speech services).
+- **Permissions**: Speech synthesis is text-to-speech output only and requires no microphone permissions (do not add or modify Permissions-Policy headers).
+
+## Mobile & Network Access (Phone Testing)
+
+1. Run frontend on your local network:
+   ```bash
+   npm run dev -- --host
+   ```
+2. Set API base URL pointing to your machine's LAN IP:
+   ```bash
+   VITE_API_BASE_URL=http://<LAN-IP>:8000/api/v1
+   ```
+3. Run backend listening on all interfaces:
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   ```
+4. Add `http://<LAN-IP>:5173` to `ALLOWED_ORIGINS` in backend configuration (explicit origins only, no wildcard CORS).

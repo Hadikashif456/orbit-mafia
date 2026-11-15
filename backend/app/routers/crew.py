@@ -101,6 +101,32 @@ def get_crew_cri(
         )
 
 
+@router.get("/{id}/cri/range", response_model=List[CRIResult])
+def get_crew_cri_range(
+    id: str = Path(..., pattern=r"^C00[1-4]$", description="Astronaut ID"),
+    from_sol: int = Query(..., alias="from", ge=1, le=200, description="Start mission Sol"),
+    to_sol: int = Query(..., alias="to", ge=1, le=200, description="End mission Sol"),
+) -> List[CRIResult]:
+    """Retrieve calculated CRI results over a contiguous range of mission Sols."""
+    if from_sol > to_sol:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Query parameter 'from' must be <= 'to'.",
+        )
+    if (to_sol - from_sol + 1) > 60:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Range cannot exceed 60 sols.",
+        )
+    try:
+        return [compute_cri_for(id, s) for s in range(from_sol, to_sol + 1)]
+    except DataUnavailableError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database service is unavailable",
+        )
+
+
 @router.get("/{id}/trend", response_model=List[TrendPoint])
 def get_crew_trend(
     id: str = Path(..., pattern=r"^C00[1-4]$", description="Astronaut ID"),

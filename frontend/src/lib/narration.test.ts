@@ -259,4 +259,75 @@ describe('narration module', () => {
     expect(formatted).toContain('Electrolyte Balance');
     expect(formatted).toContain('Not a medical diagnosis.');
   });
+
+  it('stale onerror from a cancelled utterance does not clear the new queue', () => {
+    prime();
+    mockSpeechSynthesis.speak.mockClear();
+
+    let capturedUtterance1: any = null;
+    mockSpeechSynthesis.speak.mockImplementationOnce((utt: any) => {
+      capturedUtterance1 = utt;
+      // Do not auto-end; keep it in-flight
+    });
+
+    speak('First in-flight speech.');
+    expect(capturedUtterance1).not.toBeNull();
+
+    // Now start a new speech while first is in-flight
+    mockSpeechSynthesis.speak.mockImplementation((utt: any) => {
+      // Allow new utterances to end normally
+      if (utt.onend) utt.onend();
+    });
+
+    speak('Replacement speech sentence one. Replacement speech sentence two.');
+
+    // Now simulate the old cancelled utterance firing onerror (e.g. Chrome cancel)
+    expect(capturedUtterance1.onerror).toBeDefined();
+    capturedUtterance1.onerror({ error: 'canceled' });
+
+    // The new speech queue was NOT wiped by the old utterance's error
+    const spokenTexts = mockSpeechSynthesis.speak.mock.calls.map(([utt]) => utt.text);
+    expect(spokenTexts).toContain('Replacement speech sentence one.');
+    expect(spokenTexts).toContain('Replacement speech sentence two.');
+  });
+
+  it('voices arriving after voiceschanged are picked up lazily at speak time', () => {
+    // Start with empty voices
+    mockSpeechSynthesis.getVoices.mockReturnValue([]);
+    prime();
+    mockSpeechSynthesis.speak.mockClear();
+
+    // Voices arrive later
+    const newVoices = [
+      { name: 'Late Local Voice', lang: 'en-US', localService: true },
+      { name: 'Late Remote Voice', lang: 'en-GB', localService: false },
+    ];
+    mockSpeechSynthesis.getVoices.mockReturnValue(newVoices);
+
+    // Trigger voiceschanged event listener
+    const synth = (globalThis as any).window.speechSynthesis;
+    if (typeof synth.onvoiceschanged === 'function') {
+      synth.onvoiceschanged();
+    }
+
+    speak('Testing voices changed arrival.');
+    expect(mockSpeechSynthesis.speak).toHaveBeenCalledWith(
+      expect.objectContaining({
+        text: 'Testing voices changed arrival.',
+        voice: expect.objectContaining({ name: 'Late Local Voice' }),
+      })
+    );
+  });
+
+  it('unsupported browser is a completely safe no-op without throws', () => {
+    const origWindow = (globalThis as any).window;
+    delete (globalThis as any).window;
+
+    expect(isSupported()).toBe(false);
+    expect(() => prime()).not.toThrow();
+    expect(() => speak('Safe text')).not.toThrow();
+    expect(() => cancel()).not.toThrow();
+
+    (globalThis as any).window = origWindow;
+  });
 });
