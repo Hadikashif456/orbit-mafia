@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, type FC } from 'react';
 import { useCosmos } from '../cosmos/CosmosContext';
 import { useCriRange } from '../hooks/useCriRange';
 import { ProvenanceBadge } from '../components/ProvenanceBadge';
-import { DisclaimerBar } from '../components/DisclaimerBar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import {
   StackedStressChart,
@@ -251,7 +250,6 @@ export const DriverTimelineContent: FC = () => {
 
       {/* Safety Disclaimer Footer */}
       <div className="relative z-10">
-        <DisclaimerBar />
       </div>
     </div>
   );

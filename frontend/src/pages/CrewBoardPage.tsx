@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, type FC } from 'react';
-import { GlassSwitcher, type GlassVariant } from '../components/GlassSwitcher';
+import type { GlassVariant } from '../components/GlassSwitcher';
 import { CrewGrid } from '../components/crew/CrewGrid';
 import { useCosmos } from '../cosmos/CosmosContext';
 import { useMissionSol } from '../context/SolContext';
@@ -13,7 +13,7 @@ const getSavedGlass = (): GlassVariant => {
 };
 
 export const CrewBoardPage: FC = () => {
-  const [glass, setGlass] = useState<GlassVariant>(getSavedGlass);
+  const [glass] = useState<GlassVariant>(getSavedGlass);
   const { scene, setScene } = useCosmos();
   const { sol } = useMissionSol();
   const { data: summaries, isLoading, isError, error, refetch } = useCrewSummaries(sol);
@@ -61,7 +61,6 @@ export const CrewBoardPage: FC = () => {
         )}
         {!isLoading && !isError && <CrewGrid members={members} />}
       </div>
-      <GlassSwitcher value={glass} onChange={setGlass} />
     </section>
   );
 };

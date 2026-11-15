@@ -1,7 +1,6 @@
 import type { FC } from 'react';
 import { useProvenance } from '../hooks/useProvenance';
 import { ProvenanceBadge } from '../components/ProvenanceBadge';
-import { DisclaimerBar } from '../components/DisclaimerBar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { TrustTable } from '../components/trust/TrustTable';
 
@@ -120,7 +119,6 @@ export const DataTrustContent: FC = () => {
         )}
       </section>
 
-      <DisclaimerBar />
     </div>
   );
 };

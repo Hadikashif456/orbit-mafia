@@ -1,7 +1,7 @@
 import { useEffect, useState, type FC } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { InputsChart } from '../components/detail/InputsChart';
-import { GlassSwitcher, type GlassVariant } from '../components/GlassSwitcher';
+import type { GlassVariant } from '../components/GlassSwitcher';
 import { ProfilePanel } from '../components/detail/ProfilePanel';
 import { StatusCard } from '../components/detail/StatusCard';
 import { ASTRONAUT as DETAIL_SCENE } from '../cosmos/scenes';
@@ -18,7 +18,7 @@ export const AstronautDetail: FC = () => {
   const { sol } = useMissionSol();
   const { snapshot, rows, loading, error } = useAstronaut(id);
   const [tab, setTab] = useState<DetailTab>('status');
-  const [glass, setGlass] = useState<GlassVariant>(() => {
+  const [glass] = useState<GlassVariant>(() => {
     if (typeof window === 'undefined') return 'clear';
     const saved = window.localStorage.getItem('vital-orbit-glass');
     return saved === 'frosted' || saved === 'liquid' ? saved : 'clear';
@@ -66,7 +66,6 @@ export const AstronautDetail: FC = () => {
           {activeTab === 'status' && <aside className="detail-info-panel"><StatusCard snapshot={snapshot} /></aside>}
         </div>
       </div>
-      <GlassSwitcher value={glass} onChange={setGlass} />
     </main>
   );
 };
