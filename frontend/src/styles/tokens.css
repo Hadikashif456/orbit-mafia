@@ -13,6 +13,6 @@
   --glass-saturate: 130%;
   --glass-scrim: 0.75;
   --color-text-primary: var(--supernova-white);
-  --color-text-secondary: var(--stardust-lavender);
+  --color-text-secondary: #cbd5e1;
   --text-shadow-soft: none;
 }

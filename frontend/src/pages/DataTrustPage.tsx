@@ -31,7 +31,7 @@ export const DataTrustContent: FC = () => {
       </header>
 
       {/* Honest Scientific Limitations Banner */}
-      <section className="rounded-xl border border-amber-600/40 bg-amber-950/20 p-5 space-y-3">
+      <section className="rounded-xl border border-amber-500/40 bg-slate-900/90 p-5 space-y-3">
         <div className="flex items-center gap-2">
           <span className="text-amber-400 font-mono font-bold text-sm uppercase tracking-wide">
             Critical Methodological Boundaries

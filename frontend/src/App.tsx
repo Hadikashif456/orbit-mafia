@@ -10,8 +10,8 @@ import {
   ShieldCheck,
   Scale,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
-import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
 import { AstronautDetail } from './pages/AstronautDetail';
@@ -36,6 +36,14 @@ const Shell: FC = () => {
   const { sol } = useMissionSol();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [featuresDrawerOpen, setFeaturesDrawerOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+    }, 600);
+  };
 
   // Close menus on route change
   useEffect(() => {
@@ -91,9 +99,6 @@ const Shell: FC = () => {
 
       {!fullBleed && (
         <>
-          {/* Mandatory safety disclaimer on every data view */}
-          <DisclaimerBar />
-
           {/* Navigation header with all features clearly displayed at the top */}
           <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 sm:px-6 py-3 sticky top-0 z-50">
             <div className="container mx-auto flex items-center justify-between">
@@ -198,9 +203,20 @@ const Shell: FC = () => {
                   <span className="sm:hidden">Features</span>
                 </button>
 
-                <div className="text-xs font-mono text-slate-400 px-2.5 py-1 rounded bg-slate-800/80 border border-slate-700/60 shrink-0">
+                <div className="text-xs font-mono text-slate-300 px-2.5 py-1 rounded bg-slate-800/80 border border-slate-700/60 shrink-0">
                   SOL {sol}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono text-cyan-300 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 hover:border-cyan-500/50 transition-all cursor-pointer"
+                  title="Synchronize and refresh mission telemetry"
+                  aria-label="Refresh telemetry data"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden xl:inline">Sync</span>
+                </button>
 
                 <button
                   type="button"
@@ -390,7 +406,7 @@ const Shell: FC = () => {
                               Automated astronaut ranking by criticality and rate of change
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -411,7 +427,7 @@ const Shell: FC = () => {
                               Latency buffer simulation with autonomous offline Copilot
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -432,7 +448,7 @@ const Shell: FC = () => {
                               Mission Sol 1–14 baseline bands and anomaly flags
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -453,7 +469,7 @@ const Shell: FC = () => {
                               Print-optimized medical incident debrief and commander signoff
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
                       </div>
                     </div>
@@ -481,7 +497,7 @@ const Shell: FC = () => {
                               Potential CRI points gained per restored factor
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -502,7 +518,7 @@ const Shell: FC = () => {
                               NASA OSDR provenance matrix & scientific boundaries
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
 
                         <Link
@@ -520,7 +536,7 @@ const Shell: FC = () => {
                               Mathematical formulas, weights, and documentation
                             </div>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-slate-400 mt-1 shrink-0" />
                         </Link>
                       </div>
                     </div>
@@ -560,6 +576,21 @@ const Shell: FC = () => {
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
       </main>
+
+      {!fullBleed && (
+        <footer className="border-t border-slate-800/80 bg-slate-950/90 py-4 px-4 sm:px-6 text-center text-xs text-slate-300 font-mono z-20 relative">
+          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span className="text-slate-300 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              ORBIT MAFIA // AUTONOMOUS CREW HEALTH GUARDIAN
+            </span>
+            <span className="text-slate-400">
+              Risk flags and suggested countermeasures only. Not a medical diagnosis.
+            </span>
+            <span className="text-cyan-400/90">SOL {sol} TELEMETRY</span>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };
