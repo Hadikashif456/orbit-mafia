@@ -6,12 +6,13 @@ import { useMissionSol } from '../context/SolContext';
 import { useCri } from '../hooks/useCri';
 import { useCopilotExplanation } from '../hooks/useCopilot';
 import { statusToBand } from '../api/adapters';
-import { prime, speak, cancel, formatAlertScreenNarration } from '../lib/narration';
+import { prime, speak, cancel, formatAlertScreenNarration, useSpeaking, isSupported } from '../lib/narration';
 
 export const AlertScreen: FC = () => {
   const { id } = useParams<{ id: string }>();
   const { scene, immersive, scrollProgress, setScene, setImmersive } = useCosmos();
   const { sol } = useMissionSol();
+  const speaking = useSpeaking();
 
   const { data: cri, isLoading: criLoading, error: criError } = useCri(id, sol);
   const { data: copilot, isLoading: copilotLoading, error: copilotError } = useCopilotExplanation(id, sol);
@@ -39,7 +40,7 @@ export const AlertScreen: FC = () => {
   const handleReadAloud = () => {
     if (!copilot) return;
     prime();
-    speak(formatAlertScreenNarration(copilot));
+    speak(formatAlertScreenNarration(copilot), { isCopilot: true });
   };
 
   const handleStop = () => {
@@ -80,20 +81,31 @@ export const AlertScreen: FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
-              onClick={handleReadAloud}
-            >
-              Read aloud
-            </button>
-            <button
-              type="button"
-              className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
-              onClick={handleStop}
-            >
-              Stop
-            </button>
+            {!isSupported() ? (
+              <span className="text-xs font-mono text-slate-500 italic">
+                Narration unavailable in this browser
+              </span>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleReadAloud}
+                  disabled={!copilot || speaking}
+                >
+                  {!copilot ? 'Copilot loading...' : speaking ? 'Speaking...' : 'Read aloud'}
+                </button>
+                {speaking && (
+                  <button
+                    type="button"
+                    className="text-xs font-mono px-2.5 py-1 rounded bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800 transition-colors"
+                    onClick={handleStop}
+                  >
+                    Stop
+                  </button>
+                )}
+              </>
+            )}
             <Link to={`/crew/${id}`} className="alert-back-link">Back to detail</Link>
           </div>
         </div>

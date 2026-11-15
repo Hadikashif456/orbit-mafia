@@ -12,7 +12,7 @@ import { ProvenanceBadge } from '../components/ProvenanceBadge';
 import { CountUp } from '../components/CountUp';
 import { statusToCrewStatus } from '../api/adapters';
 import { REPLAY_FIRST_SOL, REPLAY_LAST_SOL } from '../lib/mission';
-import { prime, speak, cancel, formatAlertNarration, formatCopilotNarration } from '../lib/narration';
+import { prime, speak, cancel, formatAlertNarration, formatCopilotNarration, isCopilotSpeaking } from '../lib/narration';
 import { NarrationToggle } from '../components/NarrationToggle';
 import type { CopilotResponse } from '../api/types';
 import '../styles/replay.css';
@@ -107,9 +107,10 @@ export const DemoMode: FC = () => {
 
   const { data: scenario, isLoading, isFetching, isError, error } = useScenario(replaySol);
 
-  // Narration for new alerts while playing
+  // Narration for new alerts while playing (never cuts off copilot guidance)
   useEffect(() => {
     if (!isPlaying || !narrationEnabled || !scenario?.alerts) return;
+    if (isCopilotSpeaking()) return;
 
     for (const alert of scenario.alerts) {
       if (!spokenAlertIdsRef.current.has(alert.id)) {
@@ -155,7 +156,7 @@ export const DemoMode: FC = () => {
         onSuccess: (data) => {
           setCopilotResponses((prev) => ({ ...prev, [alertId]: data }));
           if (narrationEnabled) {
-            speak(formatCopilotNarration(data));
+            speak(formatCopilotNarration(data), { isCopilot: true });
           }
         },
       }
