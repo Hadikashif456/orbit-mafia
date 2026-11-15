@@ -32,6 +32,17 @@ export async function getCri(id: string, sol?: number): Promise<CRIResult> {
   return apiClient(`/crew/${id}/cri${query}`, CRIResultSchema);
 }
 
+export async function getCriRange(
+  id: string,
+  fromSol: number,
+  toSol: number
+): Promise<CRIResult[]> {
+  return apiClient(
+    `/crew/${id}/cri/range?from=${fromSol}&to=${toSol}`,
+    z.array(CRIResultSchema)
+  );
+}
+
 export async function getTrend(
   id: string,
   window: 7 | 30 = 7,

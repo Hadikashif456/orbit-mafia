@@ -1,9 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useQueries, type UseQueryResult } from '@tanstack/react-query';
-import { getCri } from '../api/endpoints';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getCriRange } from '../api/endpoints';
 import type { CRIResult } from '../api/types';
-
-const BATCH_SIZE = 6;
 
 export interface UseCriRangeResult {
   data: CRIResult[];
@@ -19,104 +17,59 @@ export interface UseCriRangeResult {
 }
 
 /**
- * Fetches CRI history across a range of sols in batches of ~6 requests
- * to avoid backend rate limiting. Shares the exact ['cri', id, sol] query cache.
+ * Fetches CRI history across a range of sols in a SINGLE batch request
+ * via GET /api/v1/crew/{id}/cri/range?from=&to=.
+ * Seeds the individual ['cri', crewId, sol] react-query cache from the result
+ * to keep individual sol queries instantaneous.
  */
 export function useCriRange(
   crewId: string,
   fromSol: number = 100,
   toSol: number = 145
 ): UseCriRangeResult {
-  const sols = useMemo(() => {
-    const list: number[] = [];
-    for (let s = fromSol; s <= toSol; s++) {
-      list.push(s);
-    }
-    return list;
-  }, [fromSol, toSol]);
+  const queryClient = useQueryClient();
+  const total = Math.max(0, toSol - fromSol + 1);
 
-  const totalBatches = Math.ceil(sols.length / BATCH_SIZE);
-  const [activeBatch, setActiveBatch] = useState<number>(0);
-
-  // Reset active batch index when crewId or range changes
-  useEffect(() => {
-    setActiveBatch(0);
-  }, [crewId, fromSol, toSol]);
-
-  // Define query configurations with batch-level enabled flags
-  const queryDefinitions = useMemo(() => {
-    return sols.map((sol, index) => {
-      const batchIndex = Math.floor(index / BATCH_SIZE);
-      const isEnabled = Boolean(crewId) && batchIndex <= activeBatch;
-
-      return {
-        queryKey: ['cri', crewId, sol],
-        queryFn: () => getCri(crewId, sol),
-        enabled: isEnabled,
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        retry: 1,
-        retryDelay: (attemptIndex: number) => Math.min(1000 * 2 ** attemptIndex, 3000),
-        refetchOnWindowFocus: false,
-      };
-    });
-  }, [sols, crewId, activeBatch]);
-
-  const queryResults: UseQueryResult<CRIResult, Error>[] = useQueries({
-    queries: queryDefinitions,
+  const query = useQuery<CRIResult[], Error>({
+    queryKey: ['cri-range', crewId, fromSol, toSol],
+    queryFn: async () => {
+      const results = await getCriRange(crewId, fromSol, toSol);
+      return results;
+    },
+    enabled: Boolean(crewId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
-  // Advance batch when all queries in the current activeBatch have resolved
+  // Seed the per-sol ['cri', crewId, sol] cache from the range result
   useEffect(() => {
-    if (activeBatch >= totalBatches - 1) return;
-
-    const startIdx = activeBatch * BATCH_SIZE;
-    const endIdx = Math.min(startIdx + BATCH_SIZE, queryResults.length);
-    const batchResults = queryResults.slice(startIdx, endIdx);
-
-    const isBatchFinished = batchResults.every(
-      (r) => r.isSuccess || r.isError || (!r.isLoading && !r.isFetching && r.data !== undefined)
-    );
-
-    if (isBatchFinished) {
-      setActiveBatch((prev) => Math.min(totalBatches - 1, prev + 1));
+    if (query.data && Array.isArray(query.data)) {
+      query.data.forEach((item) => {
+        queryClient.setQueryData(['cri', crewId, item.sol], item);
+      });
     }
-  }, [activeBatch, totalBatches, queryResults]);
+  }, [query.data, crewId, queryClient]);
 
-  const data = useMemo(() => {
-    return queryResults
-      .map((q) => q.data)
-      .filter((d): d is CRIResult => d !== undefined)
-      .sort((a, b) => a.sol - b.sol);
-  }, [queryResults]);
-
-  const loaded = data.length;
-  const total = sols.length;
-  const errorCount = queryResults.filter((q) => q.isError).length;
-
-  const has429Error = queryResults.some((q) => {
-    const err = q.error;
-    const msg = err ? String(err.message) : '';
-    return msg.includes('429');
-  });
-
-  const isFetching = queryResults.some((q) => q.isFetching);
-  const isLoading = data.length === 0 && queryResults.some((q) => q.isLoading);
-
-  const refetchAll = () => {
-    setActiveBatch(0);
-    queryResults.forEach((q) => q.refetch());
-  };
+  const data = query.data || [];
+  const loaded = data.length > 0 ? data.length : (query.isLoading ? 0 : 0);
+  const has429Error = Boolean(
+    query.error && String(query.error.message || '').includes('429')
+  );
+  const errorCount = query.isError ? 1 : 0;
 
   return {
     data,
-    isLoading,
-    isFetching,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
     progress: {
-      loaded,
+      loaded: data.length > 0 ? data.length : loaded,
       total,
     },
     errorCount,
     has429Error,
-    refetchAll,
+    refetchAll: () => {
+      query.refetch();
+    },
   };
 }
