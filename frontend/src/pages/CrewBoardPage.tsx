@@ -1,8 +1,10 @@
-import { useEffect, useState, type FC } from 'react';
+import { useEffect, useState, useMemo, type FC } from 'react';
 import { GlassSwitcher, type GlassVariant } from '../components/GlassSwitcher';
 import { CrewGrid } from '../components/crew/CrewGrid';
 import { useCosmos } from '../cosmos/CosmosContext';
-import { CREW_MEMBERS } from '../data/crew';
+import { useMissionSol } from '../context/SolContext';
+import { useCrewSummaries } from '../hooks/useCrewSummaries';
+import { toCrewMember } from '../api/adapters';
 
 const getSavedGlass = (): GlassVariant => {
   if (typeof window === 'undefined') return 'clear';
@@ -13,6 +15,12 @@ const getSavedGlass = (): GlassVariant => {
 export const CrewBoardPage: FC = () => {
   const [glass, setGlass] = useState<GlassVariant>(getSavedGlass);
   const { scene, setScene } = useCosmos();
+  const { sol } = useMissionSol();
+  const { data: summaries, isLoading, isError, error, refetch } = useCrewSummaries(sol);
+
+  const members = useMemo(() => {
+    return summaries ? summaries.map(toCrewMember) : [];
+  }, [summaries]);
 
   useEffect(() => {
     const previousScene = scene;
@@ -32,11 +40,26 @@ export const CrewBoardPage: FC = () => {
       </svg>
       <div className="crew-board-content">
         <header className="crew-board-heading">
-          <span className="crew-eyebrow">Mission Sol 144 / Crew Status</span>
+          <span className="crew-eyebrow">Mission Sol {sol} / Crew Status</span>
           <h1>Crew Board</h1>
           <p>Live resilience readout for every crew member. Tap a card for detail.</p>
         </header>
-        <CrewGrid members={CREW_MEMBERS} />
+        {isLoading && (
+          <p className="detail-role">Loading crew resilience summaries...</p>
+        )}
+        {isError && (
+          <div>
+            <p className="detail-role">Failed to load crew resilience: {error?.message || 'Error loading crew'}</p>
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="detail-role underline mt-2 hover:text-white cursor-pointer"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {!isLoading && !isError && <CrewGrid members={members} />}
       </div>
       <GlassSwitcher value={glass} onChange={setGlass} />
     </section>

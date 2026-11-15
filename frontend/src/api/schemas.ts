@@ -106,3 +106,25 @@ export const ScenarioStateSchema = z.object({
   alerts: z.array(AlertSchema),
   events: z.array(ScenarioEventSchema),
 }).strict();
+
+export const TrendPointSchema = z.object({
+  sol: z.number().int(),
+  cri: z.number(),
+  status: StatusEnum,
+}).strict();
+
+export const ProvenanceDatasetSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  citation: z.string(),
+  accessDate: z.string(),
+  provenance: ProvenanceEnum,
+}).strict();
+
+export const ProvenanceResponseSchema = z.object({
+  datasets: z.array(ProvenanceDatasetSchema),
+  syntheticFields: z.array(z.string()),
+  replayNote: z.string(),
+  policy: z.string(),
+}).strict();
+
