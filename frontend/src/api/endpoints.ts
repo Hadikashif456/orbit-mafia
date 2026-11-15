@@ -52,9 +52,18 @@ export async function getVitals(
 
 export async function getBiomarkers(
   id: string,
-  names?: string[]
+  names?: string[],
+  panel?: string
 ): Promise<Biomarker[]> {
-  const query = names && names.length > 0 ? `?names=${encodeURIComponent(names.join(','))}` : '';
+  const params = new URLSearchParams();
+  if (names && names.length > 0) {
+    params.set('names', names.join(','));
+  }
+  if (panel) {
+    params.set('panel', panel);
+  }
+  const queryStr = params.toString();
+  const query = queryStr ? `?${queryStr}` : '';
   return apiClient(`/crew/${id}/biomarkers${query}`, z.array(BiomarkerSchema));
 }
 

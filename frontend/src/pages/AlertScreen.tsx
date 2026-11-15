@@ -6,6 +6,7 @@ import { useMissionSol } from '../context/SolContext';
 import { useCri } from '../hooks/useCri';
 import { useCopilotExplanation } from '../hooks/useCopilot';
 import { statusToBand } from '../api/adapters';
+import { prime, speak, cancel, formatAlertScreenNarration } from '../lib/narration';
 
 export const AlertScreen: FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,22 @@ export const AlertScreen: FC = () => {
       scrollProgress.current = previousProgress;
     };
   }, [scrollProgress, setImmersive, setScene]);
+
+  useEffect(() => {
+    return () => {
+      cancel();
+    };
+  }, []);
+
+  const handleReadAloud = () => {
+    if (!copilot) return;
+    prime();
+    speak(formatAlertScreenNarration(copilot));
+  };
+
+  const handleStop = () => {
+    cancel();
+  };
 
   if (criLoading || copilotLoading) {
     return (
@@ -62,7 +79,23 @@ export const AlertScreen: FC = () => {
               Mode: {copilot.mode}
             </span>
           </div>
-          <Link to={`/crew/${id}`} className="alert-back-link">Back to detail</Link>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+              onClick={handleReadAloud}
+            >
+              Read aloud
+            </button>
+            <button
+              type="button"
+              className="text-xs font-mono px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 transition-colors"
+              onClick={handleStop}
+            >
+              Stop
+            </button>
+            <Link to={`/crew/${id}`} className="alert-back-link">Back to detail</Link>
+          </div>
         </div>
         <p className="alert-summary">{copilot.summary}</p>
         <div className="alert-columns">

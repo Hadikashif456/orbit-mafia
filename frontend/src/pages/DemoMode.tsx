@@ -10,6 +10,8 @@ import { ProvenanceBadge } from '../components/ProvenanceBadge';
 import { CountUp } from '../components/CountUp';
 import { statusToCrewStatus } from '../api/adapters';
 import { REPLAY_FIRST_SOL, REPLAY_LAST_SOL } from '../lib/mission';
+import { prime, speak, cancel, formatAlertNarration, formatCopilotNarration } from '../lib/narration';
+import { NarrationToggle } from '../components/NarrationToggle';
 import type { CopilotResponse } from '../api/types';
 import '../styles/replay.css';
 
@@ -21,6 +23,15 @@ export const DemoMode: FC = () => {
   const initialSolRef = useRef(currentContextSol);
   const [replaySol, setReplaySol] = useState<number>(REPLAY_FIRST_SOL);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [narrationEnabled, setNarrationEnabled] = useState<boolean>(true);
+  const spokenAlertIdsRef = useRef<Set<string>>(new Set());
+
+  // Cancel any active speech on unmount
+  useEffect(() => {
+    return () => {
+      cancel();
+    };
+  }, []);
 
   // Map to hold responses per alert ID (never auto-call)
   const [copilotResponses, setCopilotResponses] = useState<Record<string, CopilotResponse>>({});
@@ -71,24 +82,57 @@ export const DemoMode: FC = () => {
 
   const { data: scenario, isLoading, isError, error } = useScenario(replaySol);
 
+  // Narration for new alerts while playing
+  useEffect(() => {
+    if (!isPlaying || !narrationEnabled || !scenario?.alerts) return;
+
+    for (const alert of scenario.alerts) {
+      if (!spokenAlertIdsRef.current.has(alert.id)) {
+        spokenAlertIdsRef.current.add(alert.id);
+        const text = formatAlertNarration(scenario.sol, alert);
+        speak(text);
+      }
+    }
+  }, [isPlaying, narrationEnabled, scenario]);
+
   const handlePlayToggle = () => {
+    prime();
     if (replaySol >= REPLAY_LAST_SOL && !isPlaying) {
       setReplaySol(REPLAY_FIRST_SOL);
     }
-    setIsPlaying((prev) => !prev);
+    setIsPlaying((prev) => {
+      const next = !prev;
+      if (!next) {
+        cancel();
+      }
+      return next;
+    });
   };
 
   const handleReset = () => {
+    cancel();
+    spokenAlertIdsRef.current.clear();
     setIsPlaying(false);
     setReplaySol(REPLAY_FIRST_SOL);
   };
 
+  const handleNarrationToggle = (next: boolean) => {
+    setNarrationEnabled(next);
+    if (!next) {
+      cancel();
+    }
+  };
+
   const handleAskCopilot = (alertId: string, crewId: string) => {
+    prime();
     copilotMutation.mutate(
       { crewId, sol: replaySol },
       {
         onSuccess: (data) => {
           setCopilotResponses((prev) => ({ ...prev, [alertId]: data }));
+          if (narrationEnabled) {
+            speak(formatCopilotNarration(data));
+          }
         },
       }
     );
@@ -127,6 +171,10 @@ export const DemoMode: FC = () => {
           >
             Reset
           </button>
+          <NarrationToggle
+            enabled={narrationEnabled}
+            onToggle={handleNarrationToggle}
+          />
         </div>
 
         <div className="replay-slider-wrap">
@@ -138,6 +186,7 @@ export const DemoMode: FC = () => {
             step={1}
             value={replaySol}
             onChange={(e) => {
+              cancel();
               setIsPlaying(false);
               setReplaySol(Number(e.target.value));
             }}

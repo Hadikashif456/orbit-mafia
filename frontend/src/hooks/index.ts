@@ -5,4 +5,6 @@ export * from './useScenario';
 export * from './useCopilot';
 export * from './useProvenance';
 export * from './useBiomarkers';
+export * from './useRecoveryBiomarkers';
+export * from './useCriRange';
 export * from './useAstronaut';
