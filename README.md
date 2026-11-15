@@ -281,10 +281,12 @@ Orbit Mafia is a hackathon prototype. It **does not diagnose, detect, or treat a
 
 | Role | Name |
 |---|---|
-| Frontend | Hijab |
-| Full-stack | Eman Fatima |
-| Backend / Data | Hadi |
-| Backend / AI | Javeria |
+| Creative Technical Strategist | Hijab |
+| FFrontend Experience Architect | Eman Fatima |
+| Backend Logic Specialist | Hadi |
+| Backend Integration Specialist | Javeria |
+| Backend Systems Architect | Amina |
+
 
 ```
         .  *   .      "Ad astra per aspera"      .   *  .
@@ -294,3 +296,5 @@ Orbit Mafia is a hackathon prototype. It **does not diagnose, detect, or treat a
 **Built for NASA Space Apps Challenge 2026** 🚀
 
 </div>
+
+
