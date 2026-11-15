@@ -1,6 +1,6 @@
 """NASA synthetic vitals generator. B1 job, Hour 3-8. Hadi.
 
-Generates seeded synthetic daily vitals for 4 crew, Sol 1-145, and writes
+Generates seeded synthetic daily vitals for 4 crew, Sol 1-147, and writes
 them into the SQLite table `vitals` in data/processed/orbit_mafia.db
 (the same db the ingest script writes the `biomarkers` table into).
 
@@ -15,6 +15,7 @@ Scripted scenario (from the team plan):
 - C002: sleep restriction Sol 141-144, solar particle
   event Sol 143 (radiation ~9.0 mSv, residual ~5.0 mSv on Sol 144),
   HR and HRV strain, mood 2..3.
+  Sol 146-147: severe unmitigated degradation reaching RED status.
 - C001: stays green (baselines only).
 - C003: minor sleep dip Sol 141-143.
 - C004: optimal (exercise, optimal sleep).
@@ -24,7 +25,7 @@ Baselines (seed 42):
   radiation ~ 1.84 mSv/day +- 0.15, exercise ~ 45 +- 10 min,
   mood ~ 4 +- 0.5 (integer 1-5).
 
-Verified output: 580 rows (4 crew x 145 sols), 145 per crew.
+Verified output: 588 rows (4 crew x 147 sols), 147 per crew.
 """
 
 import random
@@ -33,7 +34,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 SEED = 42
-SOLS = range(1, 146)
+SOLS = range(1, 148)
 CREW = ["C001", "C002", "C003", "C004"]
 
 # Baselines: (mean, stddev) for gaussian values.
@@ -96,6 +97,20 @@ def one_day(rng: random.Random, crew: str, sol: int) -> dict:
             hr = rng.uniform(74.5, 76.0)
             hrv = rng.uniform(50.0, 51.5)
             mood = 3
+        elif sol == 146:
+            sleep = rng.uniform(3.5, 3.55)
+            radiation = rng.uniform(2.7, 2.9)
+            hr = rng.uniform(87.5, 88.5)
+            hrv = rng.uniform(23.5, 24.5)
+            exercise = rng.uniform(10.0, 20.0)
+            mood = 1
+        elif sol == 147:
+            sleep = rng.uniform(3.5, 3.55)
+            radiation = rng.uniform(2.7, 2.9)
+            hr = rng.uniform(89.5, 90.5)
+            hrv = rng.uniform(21.5, 22.5)
+            exercise = rng.uniform(10.0, 20.0)
+            mood = 1
     elif crew == "C003":
         if 141 <= sol <= 143:
             sleep = rng.uniform(5.8, 6.3)  # Minor sleep dip
@@ -174,6 +189,14 @@ def generate_synthetic(db_path: Optional[Path] = None) -> dict:
             "SELECT hr, hrv, sleep_hours, radiation_msv, mood FROM vitals "
             "WHERE crew_id = 'C002' AND sol = 144"
         ).fetchone()
+        c002_146 = conn.execute(
+            "SELECT hr, hrv, sleep_hours, radiation_msv, mood FROM vitals "
+            "WHERE crew_id = 'C002' AND sol = 146"
+        ).fetchone()
+        c002_147 = conn.execute(
+            "SELECT hr, hrv, sleep_hours, radiation_msv, mood FROM vitals "
+            "WHERE crew_id = 'C002' AND sol = 147"
+        ).fetchone()
         tables = conn.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name"
         ).fetchall()
@@ -190,6 +213,14 @@ def generate_synthetic(db_path: Optional[Path] = None) -> dict:
     print(
         f"C002 Sol 144: hr={c002_144[0]}, hrv={c002_144[1]}, "
         f"sleep={c002_144[2]} h, radiation={c002_144[3]} mSv, mood={c002_144[4]}"
+    )
+    print(
+        f"C002 Sol 146: hr={c002_146[0]}, hrv={c002_146[1]}, "
+        f"sleep={c002_146[2]} h, radiation={c002_146[3]} mSv, mood={c002_146[4]}"
+    )
+    print(
+        f"C002 Sol 147: hr={c002_147[0]}, hrv={c002_147[1]}, "
+        f"sleep={c002_147[2]} h, radiation={c002_147[3]} mSv, mood={c002_147[4]}"
     )
 
     return {

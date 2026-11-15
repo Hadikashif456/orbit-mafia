@@ -79,6 +79,33 @@ def test_c002_sol_144_is_amber_between_55_and_65(client):
     assert data["status"] == "amber"
 
 
+def test_c002_reaches_red_at_sol_146_and_147(client):
+    """C002 reaches red at Sol 146 (44-49.5) and Sol 147 (38-47), CRI(147) < CRI(146)."""
+    resp_146 = client.get("/api/v1/crew/C002/cri?sol=146")
+    assert resp_146.status_code == 200
+    data_146 = resp_146.json()
+    assert 44.0 <= data_146["cri"] <= 49.5
+    assert data_146["status"] == "red"
+
+    resp_147 = client.get("/api/v1/crew/C002/cri?sol=147")
+    assert resp_147.status_code == 200
+    data_147 = resp_147.json()
+    assert 38.0 <= data_147["cri"] <= 47.0
+    assert data_147["status"] == "red"
+    assert data_147["cri"] < data_146["cri"]
+
+
+def test_other_crew_stay_green_at_sol_146_147(client):
+    """C001, C003, and C004 stay green at Sol 146 and Sol 147."""
+    for cid in ["C001", "C003", "C004"]:
+        for sol in [146, 147]:
+            resp = client.get(f"/api/v1/crew/{cid}/cri?sol={sol}")
+            assert resp.status_code == 200
+            data = resp.json()
+            assert data["status"] == "green", f"{cid} at sol {sol} should be green, got {data['status']}"
+            assert data["cri"] >= 75.0, f"{cid} at sol {sol} CRI should be >= 75.0, got {data['cri']}"
+
+
 @pytest.mark.parametrize("window", [7, 30])
 def test_vitals_returns_window_rows(client, window):
     """GET /crew/{id}/vitals returns exactly 7 and 30 rows."""

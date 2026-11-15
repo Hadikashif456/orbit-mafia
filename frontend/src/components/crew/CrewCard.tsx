@@ -4,6 +4,7 @@ import type { CrewMember } from '../../types/crew';
 import { getCrewStatus, getTrendLabel } from '../../utils/crew';
 import { ResilienceBar } from './ResilienceBar';
 import { StatusBadge } from './StatusBadge';
+import { CountUp } from '../CountUp';
 
 interface CrewCardProps {
   member: CrewMember;
@@ -26,7 +27,9 @@ export const CrewCard: FC<CrewCardProps> = ({ member, index }) => {
           <p>{member.role}</p>
         </div>
         <span className="cri-label">Crew Resilience Index</span>
-        <strong className="cri-value">{member.cri}</strong>
+        <strong className="cri-value">
+          <CountUp value={member.cri} start={member.previousCri} />
+        </strong>
         <ResilienceBar value={member.cri} status={status} />
         <StatusBadge status={status} />
         <span className="crew-trend">{getTrendLabel(member)}</span>

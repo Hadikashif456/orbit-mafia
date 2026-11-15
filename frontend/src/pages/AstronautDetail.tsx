@@ -4,17 +4,18 @@ import { InputsChart } from '../components/detail/InputsChart';
 import { GlassSwitcher, type GlassVariant } from '../components/GlassSwitcher';
 import { ProfilePanel } from '../components/detail/ProfilePanel';
 import { StatusCard } from '../components/detail/StatusCard';
-// Temporary scene fallback: change only DREAMSCAPE to ASTRONAUT when it is registered.
-//import { DREAMSCAPE as DETAIL_SCENE } from '../cosmos/scenes';
 import { ASTRONAUT as DETAIL_SCENE } from '../cosmos/scenes';
 import { useCosmos } from '../cosmos/CosmosContext';
 import { useAstronaut } from '../hooks/useAstronaut';
+import { useMissionSol } from '../context/SolContext';
+import { isUsingMock } from '../api/client';
 
 type DetailTab = 'profile' | 'graph' | 'status';
 
 export const AstronautDetail: FC = () => {
   const { id } = useParams<{ id: string }>();
   const { scene, setScene } = useCosmos();
+  const { sol } = useMissionSol();
   const { snapshot, rows, loading, error } = useAstronaut(id);
   const [tab, setTab] = useState<DetailTab>('status');
   const [glass, setGlass] = useState<GlassVariant>(() => {
@@ -39,7 +40,10 @@ export const AstronautDetail: FC = () => {
     <main className="detail-screen" data-glass={glass}>
       <div className="detail-layout">
         <header className="detail-title-row">
-          <span className="detail-eyebrow">Mission Sol 144 / Astronaut Detail</span>
+          <div className="flex items-center gap-3">
+            <span className="detail-eyebrow">Mission Sol {sol} / Astronaut Detail</span>
+            {isUsingMock() && <span className="synthetic-chip">Offline mock data</span>}
+          </div>
           <Link to="/crew" className="detail-back-link">Back to Crew Board</Link>
         </header>
         <div className="detail-tabs" role="tablist" aria-label="Astronaut detail sections">

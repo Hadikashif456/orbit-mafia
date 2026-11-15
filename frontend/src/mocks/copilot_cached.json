@@ -1,54 +1,34 @@
 {
-  "C002:144": {
-    "summary": "Crew C002 on Sol 144 shows elevated risk with amber CRI trajectory.",
-    "drivers": [
-      "Cardiovascular strain (Sol 144: HR 84.8 bpm, HRV 40.5 ms)",
-      "Sleep deficit (Sol 144: 5.2 h)",
-      "Solar particle event acute radiation spike (Sol 144: 5.12 mSv)",
-      "Depressed mood rating (Sol 144: 2)",
-      "Elevated inflammatory biomarker response (CRP)"
-    ],
-    "suggestedActions": [
-      {
-        "title": "Solar Particle Event Habitat Storm Shelter",
-        "protocol": "Remain in designated habitat storm shelter module until active dosimeter measures normal transit baseline (<2.0 mSv/day); rescheduling pending EVA spacewalk activities suggested for flight surgeon review.",
-        "source": "NASA HRP: Radiation Health Bio-Protection Guidelines"
-      },
-      {
-        "title": "Autonomic Deconditioning and Fluid Rebalancing",
-        "protocol": "Ingestion of monitored fluid and electrolyte countermeasure solutions and use of lower body compression garments suggested for flight surgeon review to relieve cardiac strain.",
-        "source": "NASA HRP: Cardiovascular Deconditioning and Autonomic Regulation"
-      },
-      {
-        "title": "Cardiac Pacing and Workload Adjustment",
-        "protocol": "Operational physical workload reduction and dedicated restorative rest periods suggested for flight surgeon review to support autonomic recovery.",
-        "source": "NASA HRP: Cardiovascular Deconditioning and Autonomic Regulation"
-      }
-    ],
-    "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
-    "groundedIn": [
-      "countermeasures.md#rad-storm-shelter",
-      "countermeasures.md#cardio-fluid-shift",
-      "countermeasures.md#cardio-workload-recovery"
-    ],
-    "mode": "cached",
-    "locked": false
-  },
-  "C001:140": {
-    "summary": "Crew member C001 on Sol 140 is stable with no action needed.",
-    "drivers": [],
-    "suggestedActions": [
-      {
-        "title": "Continue routine monitoring",
-        "protocol": "Continue routine biometric monitoring and nominal mission operations.",
-        "source": "NASA HRP: Behavioral Health & Performance in Deep Space Habitats"
-      }
-    ],
-    "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
-    "groundedIn": [
-      "countermeasures.md#mood-workload-pacing"
-    ],
-    "mode": "cached",
-    "locked": false
-  }
+  "summary": "Crew C002 on Sol 144 shows elevated risk with amber CRI trajectory.",
+  "drivers": [
+    "Cardiovascular strain (Sol 144: HR 84.8 bpm, HRV 40.5 ms)",
+    "Sleep deficit (Sol 144: 5.2 h)",
+    "Solar particle event acute radiation spike (Sol 144: 5.12 mSv)",
+    "Depressed mood rating (Sol 144: 2)",
+    "Elevated inflammatory biomarker response (CRP)"
+  ],
+  "suggestedActions": [
+    {
+      "title": "Solar Particle Event Habitat Storm Shelter",
+      "protocol": "Remain in designated habitat storm shelter module until active dosimeter measures normal transit baseline (<2.0 mSv/day); rescheduling pending EVA spacewalk activities suggested for flight surgeon review.",
+      "source": "NASA HRP: Radiation Health Bio-Protection Guidelines"
+    },
+    {
+      "title": "Autonomic Deconditioning and Fluid Rebalancing",
+      "protocol": "Ingestion of monitored fluid and electrolyte countermeasure solutions and use of lower body compression garments suggested for flight surgeon review to relieve cardiac strain.",
+      "source": "NASA HRP: Cardiovascular Deconditioning and Autonomic Regulation"
+    },
+    {
+      "title": "Cardiac Pacing and Workload Adjustment",
+      "protocol": "Operational physical workload reduction and dedicated restorative rest periods suggested for flight surgeon review to support autonomic recovery.",
+      "source": "NASA HRP: Cardiovascular Deconditioning and Autonomic Regulation"
+    }
+  ],
+  "disclaimer": "Risk flags and suggested countermeasures only. Not a medical diagnosis.",
+  "groundedIn": [
+    "countermeasures.md#rad-storm-shelter",
+    "countermeasures.md#cardio-fluid-shift",
+    "countermeasures.md#cardio-workload-recovery"
+  ],
+  "mode": "cached"
 }

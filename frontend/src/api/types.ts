@@ -11,6 +11,9 @@ import {
   SuggestedActionSchema,
   ProvenanceEnum,
   StatusEnum,
+  TrendPointSchema,
+  ProvenanceDatasetSchema,
+  ProvenanceResponseSchema,
 } from './schemas';
 
 export type Provenance = z.infer<typeof ProvenanceEnum>;
@@ -24,6 +27,9 @@ export type SuggestedAction = z.infer<typeof SuggestedActionSchema>;
 export type CopilotResponse = z.infer<typeof CopilotResponseSchema>;
 export type ScenarioEvent = z.infer<typeof ScenarioEventSchema>;
 export type ScenarioState = z.infer<typeof ScenarioStateSchema>;
+export type TrendPoint = z.infer<typeof TrendPointSchema>;
+export type ProvenanceDataset = z.infer<typeof ProvenanceDatasetSchema>;
+export type ProvenanceResponse = z.infer<typeof ProvenanceResponseSchema>;
 
 export interface CopilotRequest {
   crewId: string;
