@@ -38,7 +38,7 @@ export const TrustTable: FC<TrustTableProps> = ({ entries = TRUST_ENTRIES }) => 
       </div>
 
       {/* Responsive Table Container */}
-      <div className="overflow-x-auto rounded-lg border border-slate-700/80 bg-slate-900/95 shadow-xl">
+      <div className="overflow-x-auto rounded-lg border border-slate-800 bg-slate-900/60 backdrop-blur">
         <table className="w-full text-left border-collapse text-xs md:text-sm">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-800/40 text-slate-400 font-mono text-[11px] uppercase tracking-wider">

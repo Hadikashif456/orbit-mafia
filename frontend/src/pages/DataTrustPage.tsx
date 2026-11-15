@@ -11,7 +11,7 @@ export const DataTrustContent: FC = () => {
   return (
     <div className="space-y-8 max-w-6xl mx-auto px-4 py-6">
       {/* Header */}
-      <header className="rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-xl p-6 space-y-3">
+      <header className="rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur p-6 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono uppercase tracking-wider text-cyan-400">Scientific Transparency</span>
@@ -23,7 +23,7 @@ export const DataTrustContent: FC = () => {
         <h1 className="text-2xl md:text-3xl font-mono font-bold text-white tracking-tight">
           Data Trust & Methodology Disclosures
         </h1>
-        <p className="text-sm text-slate-200 leading-relaxed max-w-4xl">
+        <p className="text-sm text-slate-300 leading-relaxed max-w-4xl">
           Orbit Mafia couples NASA Open Science Data Repository (OSDR) biological profiles with simulated mission telemetry.
           To ensure complete operational and ethical transparency, every data stream, its mathematical contribution to
           the Crew Resilience Index (CRI), and its known limitations are enumerated below.
@@ -31,46 +31,46 @@ export const DataTrustContent: FC = () => {
       </header>
 
       {/* Honest Scientific Limitations Banner */}
-      <section className="rounded-xl border border-amber-600/50 bg-amber-950/40 p-5 space-y-3 shadow-lg">
+      <section className="rounded-xl border border-amber-600/40 bg-amber-950/20 p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <span className="text-amber-300 font-mono font-bold text-sm uppercase tracking-wide">
+          <span className="text-amber-400 font-mono font-bold text-sm uppercase tracking-wide">
             Critical Methodological Boundaries
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-mono text-amber-200/90">
-          <div className="rounded-lg bg-slate-950/90 border border-amber-800/60 p-3.5 space-y-1">
+          <div className="rounded-lg bg-black/40 border border-amber-800/40 p-3 space-y-1">
             <div className="font-semibold text-amber-300">1. Orbital LEO, Not Mars</div>
-            <p className="text-slate-200">
+            <p className="text-slate-300">
               Biomarkers derive from Inspiration4 (3-day Low Earth Orbit flight), not interplanetary or Mars transit conditions.
             </p>
           </div>
-          <div className="rounded-lg bg-slate-950/90 border border-amber-800/60 p-3.5 space-y-1">
+          <div className="rounded-lg bg-black/40 border border-amber-800/40 p-3 space-y-1">
             <div className="font-semibold text-amber-300">2. Sample Cohort (N = 4)</div>
-            <p className="text-slate-200">
+            <p className="text-slate-300">
               Only 4 civilian astronaut profiles across 7 discrete pre- and post-flight collection timepoints.
             </p>
           </div>
-          <div className="rounded-lg bg-slate-950/90 border border-amber-800/60 p-3.5 space-y-1">
+          <div className="rounded-lg bg-black/40 border border-amber-800/40 p-3 space-y-1">
             <div className="font-semibold text-amber-300">3. Synthetic Telemetry</div>
-            <p className="text-slate-200">
+            <p className="text-slate-300">
               Cardio, sleep debt, mood, and ambient radiation telemetry are synthetic models, not live wearable feeds.
             </p>
           </div>
-          <div className="rounded-lg bg-slate-950/90 border border-amber-800/60 p-3.5 space-y-1">
+          <div className="rounded-lg bg-black/40 border border-amber-800/40 p-3 space-y-1">
             <div className="font-semibold text-amber-300">4. Reference Ranges (CMP Only)</div>
-            <p className="text-slate-200">
+            <p className="text-slate-300">
               Standard clinical reference ranges are available for CMP chemistry. Proteomic markers lack universal baselines.
             </p>
           </div>
-          <div className="rounded-lg bg-slate-950/90 border border-amber-800/60 p-3.5 space-y-1">
+          <div className="rounded-lg bg-black/40 border border-amber-800/40 p-3 space-y-1">
             <div className="font-semibold text-amber-300">5. Advisory, Not Diagnostic</div>
-            <p className="text-slate-200">
+            <p className="text-slate-300">
               Outputs are resilience risk flags and countermeasure suggestions. Never clinical diagnoses or disease detection.
             </p>
           </div>
-          <div className="rounded-lg bg-slate-950/90 border border-amber-800/60 p-3.5 space-y-1">
+          <div className="rounded-lg bg-black/40 border border-amber-800/40 p-3 space-y-1">
             <div className="font-semibold text-amber-300">6. Ground-Truth Telemetry</div>
-            <p className="text-slate-200">
+            <p className="text-slate-300">
               {provenance?.policy || 'All CRI calculations are strictly evaluated backend-side with zero browser estimation.'}
             </p>
           </div>
@@ -88,7 +88,7 @@ export const DataTrustContent: FC = () => {
       </section>
 
       {/* Backend Live Provenance Sync */}
-      <section className="rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-xl p-5 space-y-4">
+      <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-5 space-y-4">
         <h2 className="text-base font-mono font-semibold text-slate-200">
           Live API Provenance Verification
         </h2>

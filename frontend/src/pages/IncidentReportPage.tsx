@@ -7,7 +7,14 @@ import { useCopilotExplanation } from '../hooks/useCopilot';
 import { IncidentReportView } from '../components/report/IncidentReportView';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-const DEFAULT_CREW = ['C001', 'C002', 'C003', 'C004'];
+const AVAILABLE_CREW = ['C001', 'C002', 'C003', 'C004'] as const;
+
+const CREW_ROLES: Record<string, string> = {
+  C001: 'Mission Commander',
+  C002: 'Medical Officer',
+  C003: 'Mission Specialist',
+  C004: 'Flight Engineer',
+};
 
 export const IncidentReportContent: FC = () => {
   const { id = 'C001' } = useParams<{ id: string }>();
@@ -15,10 +22,6 @@ export const IncidentReportContent: FC = () => {
   const [sol, setSol] = useState<number>(145);
 
   const { data: crewList } = useCrewSummaries(sol);
-  const crewMembers = crewList && crewList.length > 0
-    ? crewList.map((c) => ({ id: c.id, callsign: c.callsign }))
-    : DEFAULT_CREW.map((crewId) => ({ id: crewId, callsign: crewId }));
-
   const currentCrew = crewList?.find((c) => c.id === id);
 
   const { data: criResult, isLoading: criLoading, isError: criError } = useCri(id, sol);
@@ -36,23 +39,23 @@ export const IncidentReportContent: FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto px-4 py-6">
       {/* Controls Bar (Hidden during printing) */}
-      <div className="no-print flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-lg">
+      <div className="no-print flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur">
         {/* Crew Selector */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono uppercase tracking-wider text-slate-400">Select Crew:</span>
-          <div className="flex flex-wrap gap-1.5">
-            {crewMembers.map((c) => (
+          <div className="flex gap-1.5">
+            {AVAILABLE_CREW.map((crewId) => (
               <button
-                key={c.id}
+                key={crewId}
                 type="button"
-                onClick={() => handleCrewChange(c.id)}
+                onClick={() => handleCrewChange(crewId)}
                 className={`px-3 py-1 rounded text-xs font-mono font-medium border transition-colors ${
-                  id === c.id
+                  id === crewId
                     ? 'bg-cyan-950 border-cyan-500 text-cyan-200'
                     : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-slate-200'
                 }`}
               >
-                {c.id} ({c.callsign})
+                {crewId}
               </button>
             ))}
           </div>
@@ -118,7 +121,7 @@ export const IncidentReportContent: FC = () => {
         <IncidentReportView
           crewId={id}
           crewName={currentCrew?.callsign}
-          role={currentCrew ? `${currentCrew.callsign} (${currentCrew.id})` : `Astronaut ${id}`}
+          role={CREW_ROLES[id] || 'Flight Specialist'}
           sol={sol}
           criResult={criResult}
           allEvents={scenario?.events}

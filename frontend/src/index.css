@@ -172,27 +172,6 @@ body {
   }
 }
 
-/* Card opacity enhancement for crisp text readability over cosmos backdrop */
-.detail-panel,
-.detail-info-panel,
-.about-card,
-.alert-card,
-.crew-card,
-.crew-card::before,
-.summary-card,
-.data-card,
-.info-card,
-.triage-card,
-.incident-report-print,
-.card-opaque {
-  background: rgba(10, 15, 28, 0.94) !important;
-  border-color: rgba(71, 85, 105, 0.6) !important;
-}
-
-.crew-card::before {
-  background: rgba(10, 15, 28, 0.92) !important;
-}
-
 /* Incident Report Printable Styles */
 @media print {
   body {

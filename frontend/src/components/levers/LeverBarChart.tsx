@@ -12,7 +12,7 @@ export const LeverBarChart: FC<LeverBarChartProps> = ({ levers, totalDeficit }) 
       {levers.map((lever) => (
         <div
           key={lever.factor}
-          className="p-4 rounded-xl bg-slate-900/95 border border-slate-700/80 shadow-md flex flex-col gap-2"
+          className="p-4 rounded-xl bg-slate-900/60 border border-slate-800/80 flex flex-col gap-2"
         >
           <div className="flex items-center justify-between text-xs sm:text-sm">
             <span className="font-semibold text-white">{lever.label}</span>

@@ -2,23 +2,22 @@ import { useState, type FC } from 'react';
 import { useMissionSol } from '../context/SolContext';
 import { useCopilotExplanation } from '../hooks/useCopilot';
 import { useCommsSimulation } from '../hooks/useCommsSimulation';
-import { useCrewSummaries } from '../hooks/useCrewSummaries';
 import { EarthLinkControls } from '../components/comms/EarthLinkControls';
 import { OnboardCopilotCard } from '../components/comms/OnboardCopilotCard';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-const DEFAULT_CREW = ['C001', 'C002', 'C003', 'C004'];
+const CREW_MEMBERS = [
+  { id: 'C001', callsign: 'Apex' },
+  { id: 'C002', callsign: 'Vanguard' },
+  { id: 'C003', callsign: 'Beacon' },
+  { id: 'C004', callsign: 'Nova' },
+];
 
 const CommsContent: FC = () => {
   const { sol } = useMissionSol();
   const [selectedCrew, setSelectedCrew] = useState<string>('C002');
   const { isEarthLinkLost, setIsEarthLinkLost, delayMinutes, setDelayMinutes, remainingSeconds } =
     useCommsSimulation(14);
-
-  const { data: crewList } = useCrewSummaries(sol);
-  const crewMembers = crewList && crewList.length > 0
-    ? crewList.map((c) => ({ id: c.id, callsign: c.callsign }))
-    : DEFAULT_CREW.map((id) => ({ id, callsign: id }));
 
   const {
     data: copilot,
@@ -37,18 +36,18 @@ const CommsContent: FC = () => {
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           Earth Link & Autonomous Copilot
         </h1>
-        <p className="text-sm text-slate-300 max-w-3xl mt-1 leading-relaxed">
+        <p className="text-sm text-slate-400 max-w-3xl mt-1 leading-relaxed">
           Simulate communication dropouts and round-trip light-time delays with Earth ground control.
           Verify that the local AI copilot generates verified physiological countermeasures autonomously.
         </p>
       </header>
 
       {/* Crew and Sol Selector */}
-      <section className="mb-6 p-4 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-lg flex flex-wrap items-center justify-between gap-4">
+      <section className="mb-6 p-4 rounded-xl border border-slate-800 bg-slate-900/50 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="text-xs font-mono text-slate-400">Target Astronaut:</span>
           <div className="flex items-center gap-1.5">
-            {crewMembers.map((c) => (
+            {CREW_MEMBERS.map((c) => (
               <button
                 key={c.id}
                 type="button"

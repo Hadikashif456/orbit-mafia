@@ -1,6 +1,5 @@
 import { useState, useMemo, type FC } from 'react';
 import { useRecoveryBiomarkers } from '../hooks/useRecoveryBiomarkers';
-import { useCrewSummaries } from '../hooks/useCrewSummaries';
 import { ProvenanceBadge } from '../components/ProvenanceBadge';
 import { DisclaimerBar } from '../components/DisclaimerBar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -43,17 +42,6 @@ export const BiomarkerRecoveryContent: FC = () => {
   const [selectedPanel, setSelectedPanel] = useState<string>('CARDIO_EVE');
   const [selectedMarker, setSelectedMarker] = useState<string>('CRP');
   const [selectedCrew, setSelectedCrew] = useState<string>('ALL');
-
-  const { data: liveCrew } = useCrewSummaries();
-  const dynamicCrewCallsigns = useMemo(() => {
-    const map = { ...CREW_CALLSIGNS };
-    if (liveCrew) {
-      liveCrew.forEach((c) => {
-        map[c.id] = c.callsign;
-      });
-    }
-    return map;
-  }, [liveCrew]);
 
   // Fetch the 4 crew members in parallel for the selected panel
   const queryResults = useRecoveryBiomarkers(
@@ -207,7 +195,7 @@ export const BiomarkerRecoveryContent: FC = () => {
       </header>
 
       {/* Top Controls Card */}
-      <section className="mb-8 p-4 sm:p-5 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-lg grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section className="mb-8 p-4 sm:p-5 rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Panel Selector */}
         <div>
           <label htmlFor="panel-select" className="block text-xs font-mono uppercase text-slate-400 mb-1.5">
@@ -288,7 +276,7 @@ export const BiomarkerRecoveryContent: FC = () => {
             ))}
           </div>
           <span className="block text-[10px] font-mono text-slate-500 mt-1">
-            {selectedCrew === 'ALL' ? 'Showing all 4 astronauts' : `Focusing on ${selectedCrew} (${dynamicCrewCallsigns[selectedCrew] || selectedCrew})`}
+            {selectedCrew === 'ALL' ? 'Showing all 4 astronauts' : `Focusing on ${selectedCrew} (${CREW_CALLSIGNS[selectedCrew]})`}
           </span>
         </div>
       </section>
@@ -339,7 +327,7 @@ export const BiomarkerRecoveryContent: FC = () => {
               unit={markerMetadata.unit}
               selectedCrew={selectedCrew}
               crewColors={CREW_COLORS}
-              crewCallsigns={dynamicCrewCallsigns}
+              crewCallsigns={CREW_CALLSIGNS}
             />
           </section>
 
@@ -355,7 +343,7 @@ export const BiomarkerRecoveryContent: FC = () => {
                   <RecoveryStatusCard
                     key={ca.crewId}
                     crewId={ca.crewId}
-                    callsign={dynamicCrewCallsigns[ca.crewId] || ca.callsign}
+                    callsign={ca.callsign}
                     baseline={ca.baseline}
                     unit={markerMetadata.unit}
                     status={ca.status}
@@ -375,7 +363,7 @@ export const BiomarkerRecoveryContent: FC = () => {
               refMax={markerMetadata.refMax}
               selectedCrew={selectedCrew}
               crewColors={CREW_COLORS}
-              crewCallsigns={dynamicCrewCallsigns}
+              crewCallsigns={CREW_CALLSIGNS}
             />
           </section>
         </div>

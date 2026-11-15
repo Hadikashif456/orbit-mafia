@@ -18,26 +18,17 @@ import {
   type StressorKey,
 } from '../lib/compoundStress';
 import type { Provenance } from '../api/types';
-import { useCrewSummaries } from '../hooks/useCrewSummaries';
 import { RefreshCw, Users, Activity, AlertCircle } from 'lucide-react';
 
-const DEFAULT_CREW = [
-  { id: 'C002', callsign: 'C002 (Storm Exposure)' },
-  { id: 'C001', callsign: 'C001 (Baseline)' },
-  { id: 'C003', callsign: 'C003 (Baseline)' },
-  { id: 'C004', callsign: 'C004 (Baseline)' },
+const CREW_CONFIG = [
+  { id: 'C002', callsign: 'Cmdr B (Storm Exposure)', highlight: true },
+  { id: 'C001', callsign: 'Cmdr A (Baseline)' },
+  { id: 'C003', callsign: 'Cmdr C (Baseline)' },
+  { id: 'C004', callsign: 'Cmdr D (Baseline)' },
 ];
 
 export const DriverTimelineContent: FC = () => {
   const { scene, setScene } = useCosmos();
-  const { data: crewSummaries } = useCrewSummaries();
-
-  const crewConfig = crewSummaries && crewSummaries.length > 0
-    ? crewSummaries.map((c) => ({
-        id: c.id,
-        callsign: `${c.callsign}${c.id === 'C002' ? ' (Storm Exposure)' : ' (Baseline)'}`,
-      }))
-    : DEFAULT_CREW;
 
   useEffect(() => {
     const previousScene = scene;
@@ -131,7 +122,7 @@ export const DriverTimelineContent: FC = () => {
             <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg p-1">
               <Users className="w-4 h-4 text-slate-400 ml-1.5 shrink-0" />
               <div className="flex gap-1">
-                {crewConfig.map((c) => {
+                {CREW_CONFIG.map((c) => {
                   const isSelected = selectedCrew === c.id;
                   return (
                     <button
@@ -245,12 +236,12 @@ export const DriverTimelineContent: FC = () => {
             />
 
             {/* Mandatory Honest Notes */}
-            <div className="p-4 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-lg space-y-2 text-xs">
+            <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 space-y-2 text-xs">
               <div className="flex items-center gap-2 font-mono font-bold text-slate-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 inline-block" />
                 <span>&quot;Window-based contributions&quot;: CRI uses a 3-sol window, so contributions change with a delay.</span>
               </div>
-              <p className="text-slate-300 font-mono pl-3.5">
+              <p className="text-slate-400 font-mono pl-3.5">
                 &quot;Compound stress = number of stressors active at the same time. This is a count, not an interaction (synergy) model.&quot;
               </p>
             </div>
