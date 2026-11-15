@@ -394,17 +394,26 @@ export const NotificationBell: FC = () => {
   const [open, setOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
+  // Close on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+      }
+    };
     if (open) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [open]);
 
   const hasCritical = alerts.some((a) => a.severity === 'critical');
@@ -436,7 +445,7 @@ export const NotificationBell: FC = () => {
       {/* Dropdown Menu when clicked (anchored upwards so it is never hidden behind bottom of screen) */}
       {open && (
         <div
-          className="glass-dropdown fixed bottom-24 inset-x-4 max-w-sm mx-auto sm:absolute sm:bottom-full sm:mb-3 sm:inset-x-auto sm:right-0 sm:w-96 rounded-xl p-3.5 shadow-2xl z-[95] flex flex-col max-h-[65vh] sm:max-h-[520px]"
+          className="glass-dropdown fixed bottom-24 inset-x-4 max-w-sm mx-auto sm:absolute sm:bottom-full sm:mb-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-96 max-w-[calc(100vw-2rem)] rounded-xl p-3.5 shadow-2xl z-[95] flex flex-col max-h-[65vh] sm:max-h-[520px]"
           role="region"
           aria-label="Active Risk Alerts"
         >

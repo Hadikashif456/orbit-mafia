@@ -63,8 +63,6 @@ export const CrewBoard: FC = () => {
               <span className="whitespace-nowrap text-[#ffe0a3]">Every Heartbeat Matters.</span>
             </p>
 
-           
-
             {/* Quick Telemetry Ticker */}
             <div className="mt-6 flex flex-wrap items-center gap-3 text-xs font-mono">
               <span className="px-3 py-1 rounded-md bg-slate-900/80 backdrop-blur-md border border-white/[0.08] text-slate-300 shadow-sm">
