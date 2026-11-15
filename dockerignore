@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.env
+**/.env.*
+!**/.env.example
+frontend
+docs
+Design
+assets
+team
+tools
+backend/tests
+backend/scripts
+backend/.pytest_cache

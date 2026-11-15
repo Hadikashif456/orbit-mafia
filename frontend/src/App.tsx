@@ -1,7 +1,6 @@
 import { useState, useEffect, type FC } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import {
-  Menu,
   X,
   LayoutGrid,
   ChevronRight,
@@ -36,12 +35,10 @@ import './styles/alertPopup.css';
 const Shell: FC = () => {
   const location = useLocation();
   const { sol } = useMissionSol();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [featuresDrawerOpen, setFeaturesDrawerOpen] = useState(false);
 
   // Close menus on route change
   useEffect(() => {
-    setMobileMenuOpen(false);
     setFeaturesDrawerOpen(false);
   }, [location.pathname]);
 
@@ -50,8 +47,7 @@ const Shell: FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setFeaturesDrawerOpen(false);
-        setMobileMenuOpen(false);
-      }
+          }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -108,84 +104,7 @@ const Shell: FC = () => {
                 </Link>
               </div>
 
-              {/* Center: Primary Navigation Links */}
-              <nav
-                className="hidden md:flex items-center gap-1 lg:gap-1.5 text-sm font-medium glass-pill-container"
-                aria-label="Main Navigation"
-              >
-                <Link
-                  to="/crew"
-                  className={`py-1.5 px-3 ${
-                    isCrewActive
-                      ? 'glass-nav-link-active'
-                      : 'glass-nav-link'
-                  }`}
-                >
-                  Crew Board
-                </Link>
-                <Link
-                  to="/demo"
-                  className={`py-1.5 px-3 ${
-                    isDemoActive
-                      ? 'glass-nav-link-active'
-                      : 'glass-nav-link'
-                  }`}
-                >
-                  Mission Replay
-                </Link>
-                <Link
-                  to="/triage"
-                  className={`py-1.5 px-3 ${
-                    isTriageActive
-                      ? 'glass-nav-link-active'
-                      : 'glass-nav-link'
-                  }`}
-                >
-                  Triage
-                </Link>
-                <Link
-                  to="/comms"
-                  className={`py-1.5 px-3 ${
-                    isCommsActive
-                      ? 'glass-nav-link-active'
-                      : 'glass-nav-link'
-                  }`}
-                >
-                  Comms Lag
-                </Link>
-                <Link
-                  to="/recovery"
-                  className={`py-1.5 px-3 ${
-                    isRecoveryActive
-                      ? 'glass-nav-link-active'
-                      : 'glass-nav-link'
-                  }`}
-                >
-                  Recovery
-                </Link>
-                <Link
-                  to="/drivers"
-                  className={`py-1.5 px-3 ${
-                    isDriversActive
-                      ? 'glass-nav-link-active'
-                      : 'glass-nav-link'
-                  }`}
-                >
-                  Drivers
-                </Link>
-                <Link
-                  to="/about"
-                  className={`py-1.5 px-3 ${
-                    isAboutActive
-                      ? 'glass-nav-link-active'
-                      : 'glass-nav-link'
-                  }`}
-                >
-                  Data & Method
-                </Link>
-              </nav>
-
-              {/* Right: Notification Bell + Features Drawer Button + Sol Badge + Mobile Menu Toggle */}
+              {/* Right: Notification Bell + Features Drawer Button + Sol Badge */}
               <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <NotificationBell />
 
@@ -204,144 +123,8 @@ const Shell: FC = () => {
                 <div className="glass-btn-sm text-xs font-mono text-slate-300 px-2.5 py-1 rounded-lg shrink-0">
                   SOL {sol}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setMobileMenuOpen((prev) => !prev)}
-                  className="glass-btn-sm md:hidden p-2 rounded-lg text-slate-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors"
-                  aria-label="Toggle navigation menu"
-                  aria-expanded={mobileMenuOpen}
-                >
-                  {mobileMenuOpen ? <X className="w-5 h-5 text-cyan-400" /> : <Menu className="w-5 h-5" />}
-                </button>
               </div>
             </div>
-
-            {/* Mobile Dropdown Navigation Menu */}
-            {mobileMenuOpen && (
-              <nav
-                className="glass-dropdown md:hidden mt-3 p-3 rounded-xl flex flex-col gap-1 pb-2 max-h-[75vh] overflow-y-auto"
-                aria-label="Mobile Navigation"
-              >
-                <div className="px-3 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
-                  Core Views
-                </div>
-                <Link
-                  to="/crew"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isCrewActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Crew Board
-                </Link>
-                <Link
-                  to="/demo"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isDemoActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Mission Replay
-                </Link>
-                <Link
-                  to="/triage"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isTriageActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Triage Queue
-                </Link>
-                <Link
-                  to="/comms"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isCommsActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Comms Delay Simulation
-                </Link>
-                <Link
-                  to="/recovery"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isRecoveryActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Biomarker Recovery
-                </Link>
-                <Link
-                  to="/drivers"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isDriversActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Drivers Timeline
-                </Link>
-                <Link
-                  to="/about"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isAboutActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Data & Method
-                </Link>
-                <div className="border-t border-slate-800/80 my-1 pt-1">
-                  <div className="px-3 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
-                    Advanced Tools
-                  </div>
-                  <Link
-                    to="/levers"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
-                  >
-                    <span>Recovery Levers</span>
-                    <Scale className="w-3.5 h-3.5 text-cyan-400" />
-                  </Link>
-                  <Link
-                    to="/baselines/C001"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
-                  >
-                    <span>Personal Baselines</span>
-                    <Activity className="w-3.5 h-3.5 text-cyan-400" />
-                  </Link>
-                  <Link
-                    to="/trust"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
-                  >
-                    <span>Data Trust & Ethics</span>
-                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                  </Link>
-                  <Link
-                    to="/report/C001"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
-                  >
-                    <span>Incident Reports</span>
-                    <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                  </Link>
-                </div>
-              </nav>
-            )}
           </header>
 
           {/* Features Drawer */}
@@ -538,11 +321,93 @@ const Shell: FC = () => {
               </div>
             </div>
           )}
+        
+          {/* Floating Pill Navigation Dock (matching capsule style from screenshot) */}
+          <aside
+            className="fixed bottom-6 sm:bottom-8 inset-x-0 z-40 flex justify-center pointer-events-none px-4"
+            aria-label="Floating Navigation Bar"
+          >
+            <nav
+              className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 p-1.5 rounded-full bg-slate-900/85 backdrop-blur-2xl border border-white/15 shadow-[0_20px_48px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.15)] max-w-[calc(100vw-2rem)] overflow-x-auto scrollbar-none"
+              aria-label="Primary Navigation"
+            >
+              <Link
+                to="/crew"
+                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  isCrewActive
+                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                }`}
+              >
+                Crew Board
+              </Link>
+              <Link
+                to="/demo"
+                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  isDemoActive
+                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                }`}
+              >
+                Mission Replay
+              </Link>
+              <Link
+                to="/triage"
+                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  isTriageActive
+                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                }`}
+              >
+                Triage
+              </Link>
+              <Link
+                to="/comms"
+                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  isCommsActive
+                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                }`}
+              >
+                Comms Lag
+              </Link>
+              <Link
+                to="/recovery"
+                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  isRecoveryActive
+                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                }`}
+              >
+                Recovery
+              </Link>
+              <Link
+                to="/drivers"
+                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  isDriversActive
+                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                }`}
+              >
+                Drivers
+              </Link>
+              <Link
+                to="/about"
+                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                  isAboutActive
+                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                }`}
+              >
+                Data & Method
+              </Link>
+            </nav>
+          </aside>
         </>
       )}
 
       {/* Main page content */}
-      <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
+      <main id="main-content" className="flex-1 focus:outline-none pb-28 sm:pb-32" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<CrewBoard />} />
           <Route path="/crew" element={<CrewBoardPage />} />
@@ -563,19 +428,6 @@ const Shell: FC = () => {
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
       </main>
-
-      {!fullBleed && (
-        <footer className="border-t border-white/[0.08] bg-slate-950/60 backdrop-blur-xl py-6 px-4 sm:px-6 mt-auto shadow-[0_-4px_30px_rgba(0,0,0,0.35),inset_0_1px_0_0_rgba(255,255,255,0.08)]">
-          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <OrbitMafiaLogo className="h-7 w-auto" />
-            </div>
-            <p className="text-xs font-mono text-slate-500 text-center sm:text-right">
-              NASA OSDR Analog Telemetry &bull; Autonomous Crew Resilience Monitoring
-            </p>
-          </div>
-        </footer>
-      )}
     </div>
   );
 };
