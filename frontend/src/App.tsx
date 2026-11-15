@@ -41,6 +41,18 @@ const Shell: FC = () => {
 
   return (
     <div className="relative z-10 min-h-screen flex flex-col text-slate-100">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-slate-900 focus:text-cyan-400 focus:ring-2 focus:ring-cyan-400 focus:rounded-md focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
+
+      {/* Accessible live region for screen readers notifying sol and status changes */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        Active Mission Sol {sol}
+      </div>
+
       {!fullBleed && (
         <>
           {/* Mandatory safety disclaimer on every data view */}
@@ -178,7 +190,7 @@ const Shell: FC = () => {
       )}
 
       {/* Main page content */}
-      <main className="flex-1">
+      <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
         <Routes>
           <Route path="/" element={<CrewBoard />} />
           <Route path="/crew" element={<CrewBoardPage />} />

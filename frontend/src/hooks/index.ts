@@ -8,3 +8,4 @@ export * from './useBiomarkers';
 export * from './useRecoveryBiomarkers';
 export * from './useCriRange';
 export * from './useAstronaut';
+export * from './useLowPower';

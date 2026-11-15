@@ -3,6 +3,8 @@ import type { FC } from 'react';
 import clsx from 'clsx';
 import { AsciiRenderer } from './AsciiRenderer';
 import { useCosmos } from './CosmosContext';
+import { useLowPower } from '../hooks/useLowPower';
+
 import { SCENES, getScene } from './scenes';
 import type { SceneId } from './scenes';
 
@@ -33,6 +35,7 @@ const easeInOut = (t: number): number => t * t * (3 - 2 * t);
  * foreground behave exactly as before.
  */
 export const CosmicBackdrop: FC = () => {
+  const isLowPower = useLowPower();
   const { scene, immersive, scrollProgress, camera } = useCosmos();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -174,7 +177,26 @@ export const CosmicBackdrop: FC = () => {
       motionQuery.removeEventListener('change', onMotionChange);
       renderer.dispose();
     };
-  }, [camera, scrollProgress]);
+  }, [camera, scrollProgress, isLowPower]);
+
+  if (isLowPower) {
+    return (
+      <div
+        aria-hidden="true"
+        className="fixed inset-0 z-0 overflow-hidden pointer-events-none select-none"
+        style={{
+          background: 'radial-gradient(ellipse at 50% 20%, #0f172a 0%, #020617 100%)',
+        }}
+      >
+        <div
+          className={clsx(
+            'absolute inset-0 bg-slate-950 transition-opacity duration-1000 ease-out',
+            immersive ? 'opacity-0' : 'opacity-70',
+          )}
+        />
+      </div>
+    );
+  }
 
   const definition = getScene(scene);
 
