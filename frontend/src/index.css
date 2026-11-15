@@ -171,3 +171,32 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Incident Report Printable Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  header:not(.print-header),
+  nav,
+  footer:not(.print-footer),
+  button,
+  .no-print {
+    display: none !important;
+  }
+  .incident-report-print {
+    background: #ffffff !important;
+    color: #111827 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+

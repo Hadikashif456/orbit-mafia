@@ -12,6 +12,12 @@ import { DemoMode } from './pages/DemoMode';
 import { DataMethod } from './pages/DataMethod';
 import { BiomarkerRecovery } from './pages/BiomarkerRecovery';
 import { DriverTimeline } from './pages/DriverTimeline';
+import { TriageQueuePage } from './pages/TriageQueuePage';
+import { CommsSimulationPage } from './pages/CommsSimulationPage';
+import { RecoveryLeversPage } from './pages/RecoveryLeversPage';
+import { PersonalBaselinesPage } from './pages/PersonalBaselinesPage';
+import { DataTrustPage } from './pages/DataTrustPage';
+import { IncidentReportPage } from './pages/IncidentReportPage';
 
 // Mock minimal window/browser APIs for Node test environment
 beforeAll(() => {
@@ -75,6 +81,12 @@ function renderRoute(route: string) {
               <Route path="/about" element={<DataMethod />} />
               <Route path="/recovery" element={<BiomarkerRecovery />} />
               <Route path="/drivers" element={<DriverTimeline />} />
+              <Route path="/triage" element={<TriageQueuePage />} />
+              <Route path="/comms" element={<CommsSimulationPage />} />
+              <Route path="/levers" element={<RecoveryLeversPage />} />
+              <Route path="/baselines/:id" element={<PersonalBaselinesPage />} />
+              <Route path="/trust" element={<DataTrustPage />} />
+              <Route path="/report/:id" element={<IncidentReportPage />} />
             </Routes>
           </MemoryRouter>
         </CosmosProvider>
@@ -93,6 +105,12 @@ describe('Smoke Tests - Route Rendering', () => {
     '/about',
     '/recovery',
     '/drivers',
+    '/triage',
+    '/comms',
+    '/levers',
+    '/baselines/C001',
+    '/trust',
+    '/report/C001',
   ];
 
   routes.forEach((route) => {

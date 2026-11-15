@@ -10,6 +10,12 @@ import { DemoMode } from './pages/DemoMode';
 import { DataMethod } from './pages/DataMethod';
 import { BiomarkerRecovery } from './pages/BiomarkerRecovery';
 import { DriverTimeline } from './pages/DriverTimeline';
+import { TriageQueuePage } from './pages/TriageQueuePage';
+import { CommsSimulationPage } from './pages/CommsSimulationPage';
+import { RecoveryLeversPage } from './pages/RecoveryLeversPage';
+import { PersonalBaselinesPage } from './pages/PersonalBaselinesPage';
+import { DataTrustPage } from './pages/DataTrustPage';
+import { IncidentReportPage } from './pages/IncidentReportPage';
 import { CosmosProvider } from './cosmos/CosmosContext';
 import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
 import { CosmicSceneSwitcher } from './cosmos/CosmicSceneSwitcher';
@@ -38,6 +44,12 @@ const Shell: FC = () => {
   const isAboutActive = location.pathname === '/about';
   const isRecoveryActive = location.pathname === '/recovery';
   const isDriversActive = location.pathname === '/drivers';
+  const isTriageActive = location.pathname === '/triage';
+  const isCommsActive = location.pathname === '/comms';
+  const isLeversActive = location.pathname === '/levers';
+  const isBaselinesActive = location.pathname.startsWith('/baselines');
+  const isTrustActive = location.pathname === '/trust';
+  const isReportActive = location.pathname.startsWith('/report');
 
   return (
     <div className="relative z-10 min-h-screen flex flex-col text-slate-100">
@@ -100,6 +112,42 @@ const Shell: FC = () => {
                     className={`${isDriversActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
                   >
                     Drivers
+                  </Link>
+                  <Link
+                    to="/triage"
+                    className={`${isTriageActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
+                  >
+                    Triage
+                  </Link>
+                  <Link
+                    to="/comms"
+                    className={`${isCommsActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
+                  >
+                    Comms
+                  </Link>
+                  <Link
+                    to="/levers"
+                    className={`${isLeversActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
+                  >
+                    Levers
+                  </Link>
+                  <Link
+                    to="/baselines/C001"
+                    className={`${isBaselinesActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
+                  >
+                    Baselines
+                  </Link>
+                  <Link
+                    to="/trust"
+                    className={`${isTrustActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
+                  >
+                    Data Trust
+                  </Link>
+                  <Link
+                    to="/report/C001"
+                    className={`${isReportActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
+                  >
+                    Report
                   </Link>
                 </nav>
               </div>
@@ -183,6 +231,72 @@ const Shell: FC = () => {
                 >
                   Drivers
                 </Link>
+                <Link
+                  to="/triage"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isTriageActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Triage
+                </Link>
+                <Link
+                  to="/comms"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isCommsActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Comms
+                </Link>
+                <Link
+                  to="/levers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isLeversActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Levers
+                </Link>
+                <Link
+                  to="/baselines/C001"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isBaselinesActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Baselines
+                </Link>
+                <Link
+                  to="/trust"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isTrustActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Data Trust
+                </Link>
+                <Link
+                  to="/report/C001"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isReportActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Report
+                </Link>
               </nav>
             )}
           </header>
@@ -200,6 +314,14 @@ const Shell: FC = () => {
           <Route path="/about" element={<DataMethod />} />
           <Route path="/recovery" element={<BiomarkerRecovery />} />
           <Route path="/drivers" element={<DriverTimeline />} />
+          <Route path="/triage" element={<TriageQueuePage />} />
+          <Route path="/comms" element={<CommsSimulationPage />} />
+          <Route path="/levers" element={<RecoveryLeversPage />} />
+          <Route path="/baselines/:id" element={<PersonalBaselinesPage />} />
+          <Route path="/baselines" element={<PersonalBaselinesPage />} />
+          <Route path="/trust" element={<DataTrustPage />} />
+          <Route path="/report/:id" element={<IncidentReportPage />} />
+          <Route path="/report" element={<IncidentReportPage />} />
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
       </main>
