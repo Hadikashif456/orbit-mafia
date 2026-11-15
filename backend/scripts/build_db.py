@@ -5,9 +5,9 @@ Usage:
 
 This script:
 1. Ingests NASA OSDR OSD-575 blood biomarker data from data/raw/*_TRANSFORMED.csv into table `biomarkers`.
-2. Generates deterministic synthetic physiological vitals (Sol 1-145) for all 4 crew members into table `vitals`.
-3. Validates database counts (580 vitals rows) and outputs biomarker counts per crew and per panel.
-4. Computes and displays CRI calculations for C002 across Sol 142-145.
+2. Generates deterministic synthetic physiological vitals (Sol 1-147) for all 4 crew members into table `vitals`.
+3. Validates database counts (588 vitals rows) and outputs biomarker counts per crew and per panel.
+4. Computes and displays CRI calculations for C002 across Sol 142-147.
 Safe to re-run multiple times.
 """
 
@@ -59,18 +59,18 @@ def build_db(db_path: Path = None) -> dict:
     finally:
         conn.close()
 
-    print(f"Vitals Total Rows: {vitals_count} (Expected: 580 = 4 x 145)")
+    print(f"Vitals Total Rows: {vitals_count} (Expected: 588 = 4 x 147)")
     print(f"Vitals Per Crew: {dict(per_crew_vitals)}")
     print(f"Biomarkers Total Rows: {biomarkers_count}")
     print(f"Biomarkers Per Crew: {dict(per_crew_bio)}")
     print(f"Biomarkers Per Panel: {dict(per_panel_bio)}")
 
-    assert vitals_count == 580, f"Expected 580 vitals rows, got {vitals_count}"
+    assert vitals_count == 588, f"Expected 588 vitals rows, got {vitals_count}"
 
-    # Step 4: Compute and verify C002 Sol 142-145 CRI
-    print("\n--- 4. C002 Sol 142-145 CRI Calculations ---")
+    # Step 4: Compute and verify C002 Sol 142-147 CRI
+    print("\n--- 4. C002 Sol 142-147 CRI Calculations ---")
     c002_cris = {}
-    for sol in range(142, 146):
+    for sol in range(142, 148):
         res = compute_cri_for("C002", sol)
         c002_cris[sol] = res.cri
         print(f"  C002 Sol {sol}: CRI={res.cri:.1f} ({res.status}), topDriver={top_driver_label(res)}, contributions={res.contributions}")

@@ -32,18 +32,35 @@ def point_settings_to_temp_db(shared_temp_db, monkeypatch):
 
 
 def test_vitals_row_counts_and_per_crew(shared_temp_db):
-    """Verify exactly 580 vitals rows total and 145 per crew."""
+    """Verify exactly 588 vitals rows total and 147 per crew."""
     conn = sqlite3.connect(shared_temp_db)
     try:
         total = conn.execute("SELECT COUNT(*) FROM vitals").fetchone()[0]
-        assert total == 580, f"Expected 580 vitals rows, got {total}"
+        assert total == 588, f"Expected 588 vitals rows, got {total}"
 
         per_crew = conn.execute(
             "SELECT crew_id, COUNT(*) FROM vitals GROUP BY crew_id ORDER BY crew_id"
         ).fetchall()
         assert len(per_crew) == 4
         for crew_id, count in per_crew:
-            assert count == 145, f"Crew {crew_id} expected 145 rows, got {count}"
+            assert count == 147, f"Crew {crew_id} expected 147 rows, got {count}"
+    finally:
+        conn.close()
+
+
+def test_sol_1_to_145_snapshot_guard(shared_temp_db):
+    """Snapshot guard: exactly 580 vitals rows total and 145 per crew for sols <= 145."""
+    conn = sqlite3.connect(shared_temp_db)
+    try:
+        total_145 = conn.execute("SELECT COUNT(*) FROM vitals WHERE sol <= 145").fetchone()[0]
+        assert total_145 == 580, f"Expected 580 vitals rows for sols <= 145, got {total_145}"
+
+        per_crew_145 = conn.execute(
+            "SELECT crew_id, COUNT(*) FROM vitals WHERE sol <= 145 GROUP BY crew_id ORDER BY crew_id"
+        ).fetchall()
+        assert len(per_crew_145) == 4
+        for crew_id, count in per_crew_145:
+            assert count == 145, f"Crew {crew_id} expected 145 rows for sols <= 145, got {count}"
     finally:
         conn.close()
 
