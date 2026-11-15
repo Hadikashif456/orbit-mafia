@@ -124,10 +124,11 @@ export const CrewBoard: FC = () => {
       {/* ================= HERO SECTION ================= */}
       <section aria-label="Hero Overview" className="relative min-h-[85vh] flex items-center">
         <ObsidianSolaris />
-        <div
-          className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 z-20 text-center sm:text-left"
-          style={{ textShadow: '0 2px 28px rgba(0,0,0,0.9)' }}
-        >
+        <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 z-20 flex justify-start">
+          <div
+            className="max-w-2xl text-left"
+            style={{ textShadow: '0 2px 28px rgba(0,0,0,0.9)' }}
+          >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-badge text-cyan-300 text-xs font-mono mb-4">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
             <span>AUTONOMOUS CREW HEALTH RESILIENCE · MOON & MARS TRANSIT</span>
@@ -185,6 +186,7 @@ export const CrewBoard: FC = () => {
               View Modules ↓
             </a>
           </div>
+        </div>
         </div>
       </section>
 

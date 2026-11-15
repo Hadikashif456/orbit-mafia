@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Scale,
   FileText,
-  RefreshCw,
 } from 'lucide-react';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
@@ -37,14 +36,7 @@ const Shell: FC = () => {
   const location = useLocation();
   const { sol } = useMissionSol();
   const [featuresDrawerOpen, setFeaturesDrawerOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
 
-  const handleSync = () => {
-    setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-    }, 600);
-  };
 
   // Close menus on route change
   useEffect(() => {
@@ -98,41 +90,15 @@ const Shell: FC = () => {
 
       {!fullBleed && (
         <>
-          {/* Navigation header with all features clearly displayed at the top */}
-          <header className="glass-nav px-4 sm:px-6 py-2.5">
-            <div className="container mx-auto flex items-center justify-between">
-              {/* Left: Brand Logo */}
-              <div className="flex items-center gap-3 shrink-0">
-                <Link
-                  to="/"
-                  className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
-                  aria-label="Orbit Mafia Home"
-                >
-                  <OrbitMafiaLogo className="h-8 sm:h-9 w-auto" />
-                </Link>
-              </div>
-
-              {/* Right: Notification Bell + Features Drawer Button + Sol Badge */}
-              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                <NotificationBell />
-
-                <button
-                  type="button"
-                  onClick={() => setFeaturesDrawerOpen(true)}
-                  className="glass-btn-features flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-cyan-300 cursor-pointer"
-                  aria-label="Open Features and Tools drawer"
-                  aria-expanded={featuresDrawerOpen}
-                >
-                  <LayoutGrid className="w-4 h-4 text-cyan-400" />
-                  <span className="hidden sm:inline">All Features</span>
-                  <span className="sm:hidden">Features</span>
-                </button>
-
-                <div className="glass-btn-sm text-xs font-mono text-slate-300 px-2.5 py-1 rounded-lg shrink-0">
-                  SOL {sol}
-                </div>
-              </div>
-            </div>
+          {/* Top Brand Header (Centered Logo) */}
+          <header className="pt-4 pb-2 px-4 flex items-center justify-center relative z-30">
+            <Link
+              to="/"
+              className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
+              aria-label="Orbit Mafia Home"
+            >
+              <OrbitMafiaLogo className="h-8 sm:h-9 w-auto" />
+            </Link>
           </header>
 
           {/* Features Drawer */}
@@ -329,82 +295,102 @@ const Shell: FC = () => {
               </div>
             </div>
           )}
-        
-          {/* Floating Pill Navigation Dock (matching capsule style from screenshot) */}
+          {/* Floating Controls & Navigation Dock (matching photo) */}
           <aside
-            className="fixed bottom-6 sm:bottom-8 inset-x-0 z-40 flex justify-center pointer-events-none px-4"
-            aria-label="Floating Navigation Bar"
+            className="fixed bottom-4 sm:bottom-6 inset-x-0 z-40 flex flex-col items-center pointer-events-none px-4 gap-2.5"
+            aria-label="Floating Navigation and Utilities"
           >
+            {/* Top Row: Utilities (Notification Bell + All Features + Sol Counter) */}
+            <div className="pointer-events-auto flex items-center gap-2.5 sm:gap-3">
+              <NotificationBell />
+
+              <button
+                type="button"
+                onClick={() => setFeaturesDrawerOpen(true)}
+                className="glass-btn-features flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium text-cyan-300 cursor-pointer"
+                aria-label="Open Features and Tools drawer"
+                aria-expanded={featuresDrawerOpen}
+              >
+                <LayoutGrid className="w-4 h-4 text-cyan-400" />
+                <span>All Features</span>
+              </button>
+
+              <div className="glass-btn-sm text-xs font-mono text-slate-300 px-3 py-1.5 rounded-lg shrink-0">
+                SOL {sol}
+              </div>
+            </div>
+
+            {/* Bottom Row: Navigation Dock */}
             <nav
-              className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 p-1.5 rounded-full bg-slate-900/85 backdrop-blur-2xl border border-white/15 shadow-[0_20px_48px_rgba(0,0,0,0.7),inset_0_1px_0_0_rgba(255,255,255,0.15)] max-w-[calc(100vw-2rem)] overflow-x-auto scrollbar-none"
+              className="pointer-events-auto flex items-center gap-1 sm:gap-2 px-4 py-2 rounded-full bg-slate-900/80 backdrop-blur-2xl border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.65)] max-w-[calc(100vw-2rem)] overflow-x-auto scrollbar-none"
               aria-label="Primary Navigation"
             >
               <Link
                 to="/crew"
-                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isCrewActive
-                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                    ? 'text-cyan-300 bg-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 Crew Board
               </Link>
               <Link
                 to="/demo"
-                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isDemoActive
-                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                    ? 'text-cyan-300 bg-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 Mission Replay
               </Link>
               <Link
                 to="/triage"
-                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isTriageActive
-                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                    ? 'text-cyan-300 bg-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 Triage
               </Link>
               <Link
                 to="/comms"
-                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isCommsActive
-                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                    ? 'text-cyan-300 bg-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 Comms Lag
               </Link>
               <Link
                 to="/recovery"
-                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isRecoveryActive
-                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                    ? 'text-cyan-300 bg-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 Recovery
               </Link>
               <Link
                 to="/drivers"
-                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isDriversActive
-                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                    ? 'text-cyan-300 bg-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 Drivers
               </Link>
               <Link
                 to="/about"
-                className={`px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
                   isAboutActive
-                    ? 'bg-white text-slate-950 font-semibold shadow-[0_2px_10px_rgba(255,255,255,0.3)]'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium'
+                    ? 'text-cyan-300 bg-white/10'
+                    : 'text-slate-300 hover:text-white hover:bg-white/5'
                 }`}
               >
                 Data & Method
@@ -436,21 +422,6 @@ const Shell: FC = () => {
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
       </main>
-
-      {!fullBleed && (
-        <footer className="border-t border-slate-800/80 bg-slate-950/90 py-4 px-4 sm:px-6 text-center text-xs text-slate-300 font-mono z-20 relative">
-          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-            <span className="text-slate-300 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              ORBIT MAFIA // AUTONOMOUS CREW HEALTH GUARDIAN
-            </span>
-            <span className="text-slate-400">
-              Risk flags and suggested countermeasures only. Not a medical diagnosis.
-            </span>
-            <span className="text-cyan-400/90">SOL {sol} TELEMETRY</span>
-          </div>
-        </footer>
-      )}
     </div>
   );
 };
