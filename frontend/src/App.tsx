@@ -30,6 +30,7 @@ import { CosmosProvider } from './cosmos/CosmosContext';
 import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
 import { CosmicSceneSwitcher } from './cosmos/CosmicSceneSwitcher';
 import { SolProvider, useMissionSol } from './context/SolContext';
+import { OrbitMafiaLogo } from './components/OrbitMafiaLogo';
 
 const Shell: FC = () => {
   const location = useLocation();
@@ -101,9 +102,10 @@ const Shell: FC = () => {
               <div className="flex items-center gap-3 shrink-0">
                 <Link
                   to="/"
-                  className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2"
+                  className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
+                  aria-label="Orbit Mafia Home"
                 >
-                  <span className="text-cyan-400">Orbit</span> Mafia
+                  <OrbitMafiaLogo className="h-8 sm:h-9 w-auto" />
                 </Link>
               </div>
 
@@ -560,6 +562,19 @@ const Shell: FC = () => {
           <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
       </main>
+
+      {!fullBleed && (
+        <footer className="border-t border-slate-800/80 bg-slate-900/60 backdrop-blur py-6 px-4 sm:px-6 mt-auto">
+          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <OrbitMafiaLogo className="h-7 w-auto" />
+            </div>
+            <p className="text-xs font-mono text-slate-500 text-center sm:text-right">
+              NASA OSDR Analog Telemetry &bull; Autonomous Crew Resilience Monitoring
+            </p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };
