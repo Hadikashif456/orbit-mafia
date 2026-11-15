@@ -31,6 +31,8 @@ import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
 import { CosmicSceneSwitcher } from './cosmos/CosmicSceneSwitcher';
 import { SolProvider, useMissionSol } from './context/SolContext';
 import { OrbitMafiaLogo } from './components/OrbitMafiaLogo';
+import { AlertPopupHost, NotificationBell } from './components/alerts/AlertPopupHost';
+import './styles/alertPopup.css';
 
 const Shell: FC = () => {
   const location = useLocation();
@@ -186,8 +188,10 @@ const Shell: FC = () => {
                 </Link>
               </nav>
 
-              {/* Right: Features Drawer Button + Sol Badge + Mobile Menu Toggle */}
-              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+              {/* Right: Notification Bell + Features Drawer Button + Sol Badge + Mobile Menu Toggle */}
+              <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                <NotificationBell />
+
                 <button
                   type="button"
                   onClick={() => setFeaturesDrawerOpen(true)}
@@ -586,6 +590,7 @@ export const App: FC = () => {
         <CosmosProvider>
           {/* Animated ASCII universe behind every view */}
           <CosmicBackdrop />
+          <AlertPopupHost />
           <Shell />
         </CosmosProvider>
       </SolProvider>
