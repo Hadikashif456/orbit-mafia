@@ -12,7 +12,7 @@
   min-height: min(680px, calc(100dvh - var(--header-h) - 14vh));
   margin: auto;
   padding: clamp(22px, 4vw, 52px);
-  background: rgba(3, 2, 10, 0.18);
+  background: rgba(8, 12, 24, 0.94);
   border: 1px solid color-mix(in srgb, var(--alert-color) 72%, transparent);
   border-radius: var(--card-radius);
   box-shadow: 0 0 42px color-mix(in srgb, var(--alert-color) 32%, transparent), inset 0 1px 0 color-mix(in srgb, var(--alert-color) 38%, transparent);

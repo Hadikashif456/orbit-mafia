@@ -1,6 +1,18 @@
 import { useState, useEffect, type FC } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import {
+  Menu,
+  X,
+  LayoutGrid,
+  ChevronRight,
+  Activity,
+  Radio,
+  ShieldCheck,
+  Scale,
+  FileText,
+  Compass,
+  Sparkles,
+} from 'lucide-react';
 import { DisclaimerBar } from './components/DisclaimerBar';
 import { CrewBoard } from './pages/CrewBoard';
 import { CrewBoardPage } from './pages/CrewBoardPage';
@@ -25,13 +37,25 @@ const Shell: FC = () => {
   const location = useLocation();
   const { sol } = useMissionSol();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [desktopMoreOpen, setDesktopMoreOpen] = useState(false);
+  const [featuresDrawerOpen, setFeaturesDrawerOpen] = useState(false);
 
-  // Close navigation menus on route change
+  // Close menus on route change
   useEffect(() => {
     setMobileMenuOpen(false);
-    setDesktopMoreOpen(false);
+    setFeaturesDrawerOpen(false);
   }, [location.pathname]);
+
+  // Close menus on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setFeaturesDrawerOpen(false);
+        setMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // The cosmos page is a full-bleed visual with no health data on it, so it
   // runs without the disclaimer bar and navigation header.
@@ -52,13 +76,6 @@ const Shell: FC = () => {
   const isBaselinesActive = location.pathname.startsWith('/baselines');
   const isTrustActive = location.pathname === '/trust';
   const isReportActive = location.pathname.startsWith('/report');
-  const isAnyMoreActive =
-    isTriageActive ||
-    isCommsActive ||
-    isLeversActive ||
-    isBaselinesActive ||
-    isTrustActive ||
-    isReportActive;
 
   return (
     <div className="relative z-10 min-h-screen flex flex-col text-slate-100">
@@ -79,156 +96,70 @@ const Shell: FC = () => {
           {/* Mandatory safety disclaimer on every data view */}
           <DisclaimerBar />
 
-          {/* Navigation header */}
-          <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-4 sm:px-6 py-3.5 sm:py-4 sticky top-0 z-50">
+          {/* Navigation header with centralized primary links */}
+          <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 sm:px-6 py-3 sticky top-0 z-50">
             <div className="container mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-4 lg:gap-8">
+              {/* Left: Brand Logo */}
+              <div className="flex items-center gap-3 shrink-0">
                 <Link
                   to="/"
-                  className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2 shrink-0"
+                  className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2"
                 >
                   <span className="text-cyan-400">Orbit</span> Mafia
                 </Link>
-
-                {/* Desktop Navigation Links */}
-                <nav className="hidden md:flex items-center gap-4 lg:gap-6 text-sm font-medium">
-                  <Link
-                    to="/crew"
-                    className={`${isCrewActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Crew Board
-                  </Link>
-                  <Link
-                    to="/demo"
-                    className={`${isDemoActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Mission Replay
-                  </Link>
-                  <Link
-                    to="/about"
-                    className={`${isAboutActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Data & Method
-                  </Link>
-                  <Link
-                    to="/recovery"
-                    className={`${isRecoveryActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Recovery
-                  </Link>
-                  <Link
-                    to="/drivers"
-                    className={`${isDriversActive ? 'text-white' : 'text-slate-300'} hover:text-white transition-colors`}
-                  >
-                    Drivers
-                  </Link>
-
-                  {/* "More" Dropdown Menu for New Features */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setDesktopMoreOpen((prev) => !prev)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
-                        isAnyMoreActive
-                          ? 'text-cyan-400 bg-slate-800/80 border border-cyan-800/60'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
-                      }`}
-                      aria-expanded={desktopMoreOpen}
-                      aria-haspopup="true"
-                    >
-                      <span>More</span>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform ${
-                          desktopMoreOpen ? 'rotate-180 text-cyan-400' : ''
-                        }`}
-                      />
-                    </button>
-
-                    {desktopMoreOpen && (
-                      <div
-                        className="absolute right-0 mt-2 w-48 rounded-lg bg-slate-900 border border-slate-800 shadow-xl py-1.5 z-50 backdrop-blur"
-                        role="menu"
-                      >
-                        <Link
-                          to="/triage"
-                          onClick={() => setDesktopMoreOpen(false)}
-                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
-                            isTriageActive
-                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                          }`}
-                          role="menuitem"
-                        >
-                          Triage Queue
-                        </Link>
-                        <Link
-                          to="/comms"
-                          onClick={() => setDesktopMoreOpen(false)}
-                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
-                            isCommsActive
-                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                          }`}
-                          role="menuitem"
-                        >
-                          Comms Simulation
-                        </Link>
-                        <Link
-                          to="/levers"
-                          onClick={() => setDesktopMoreOpen(false)}
-                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
-                            isLeversActive
-                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                          }`}
-                          role="menuitem"
-                        >
-                          Recovery Levers
-                        </Link>
-                        <Link
-                          to="/baselines/C001"
-                          onClick={() => setDesktopMoreOpen(false)}
-                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
-                            isBaselinesActive
-                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                          }`}
-                          role="menuitem"
-                        >
-                          Personal Baselines
-                        </Link>
-                        <Link
-                          to="/trust"
-                          onClick={() => setDesktopMoreOpen(false)}
-                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
-                            isTrustActive
-                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                          }`}
-                          role="menuitem"
-                        >
-                          Data Trust Panel
-                        </Link>
-                        <Link
-                          to="/report/C001"
-                          onClick={() => setDesktopMoreOpen(false)}
-                          className={`block px-3.5 py-2 text-xs font-mono transition-colors ${
-                            isReportActive
-                              ? 'text-cyan-300 bg-slate-800/90 font-semibold'
-                              : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                          }`}
-                          role="menuitem"
-                        >
-                          Incident Report
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </nav>
               </div>
 
-              {/* Sol Badge + Mobile Hamburger Toggle */}
-              <div className="flex items-center gap-3">
+              {/* Center: Centralized Primary Navigation */}
+              <nav
+                className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-medium"
+                aria-label="Main Navigation"
+              >
+                <Link
+                  to="/crew"
+                  className={`transition-colors py-1 px-2 rounded-md ${
+                    isCrewActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/70 border border-cyan-800/40'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  Crew Board
+                </Link>
+                <Link
+                  to="/demo"
+                  className={`transition-colors py-1 px-2 rounded-md ${
+                    isDemoActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/70 border border-cyan-800/40'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  Mission Replay
+                </Link>
+                <Link
+                  to="/about"
+                  className={`transition-colors py-1 px-2 rounded-md ${
+                    isAboutActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/70 border border-cyan-800/40'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  Data & Method
+                </Link>
+              </nav>
+
+              {/* Right: Side Features Pop-up Button + Sol Badge + Mobile Menu Toggle */}
+              <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setFeaturesDrawerOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-700/70 transition-all shadow-sm shadow-cyan-950/50"
+                  aria-label="Open Features and Tools drawer"
+                  aria-expanded={featuresDrawerOpen}
+                >
+                  <LayoutGrid className="w-4 h-4 text-cyan-400" />
+                  <span className="hidden sm:inline">Features & Tools</span>
+                  <span className="sm:hidden">Features</span>
+                </button>
+
                 <div className="text-xs font-mono text-slate-400 px-2.5 py-1 rounded bg-slate-800/80 border border-slate-700/60 shrink-0">
                   SOL {sol}
                 </div>
@@ -248,9 +179,12 @@ const Shell: FC = () => {
             {/* Mobile Dropdown Navigation Menu */}
             {mobileMenuOpen && (
               <nav
-                className="md:hidden mt-3 pt-3 border-t border-slate-800/80 flex flex-col gap-1 pb-2"
+                className="md:hidden mt-3 pt-3 border-t border-slate-800/80 flex flex-col gap-1 pb-2 max-h-[75vh] overflow-y-auto"
                 aria-label="Mobile Navigation"
               >
+                <div className="px-3 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
+                  Core Views
+                </div>
                 <Link
                   to="/crew"
                   onClick={() => setMobileMenuOpen(false)}
@@ -284,6 +218,10 @@ const Shell: FC = () => {
                 >
                   Data & Method
                 </Link>
+
+                <div className="px-3 pt-2 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
+                  Biomedical & Physiology
+                </div>
                 <Link
                   to="/recovery"
                   onClick={() => setMobileMenuOpen(false)}
@@ -293,7 +231,7 @@ const Shell: FC = () => {
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  Recovery
+                  Biomarker Recovery
                 </Link>
                 <Link
                   to="/drivers"
@@ -304,40 +242,7 @@ const Shell: FC = () => {
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  Drivers
-                </Link>
-                <Link
-                  to="/triage"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isTriageActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Triage
-                </Link>
-                <Link
-                  to="/comms"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isCommsActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Comms
-                </Link>
-                <Link
-                  to="/levers"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isLeversActive
-                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
-                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                  }`}
-                >
-                  Levers
+                  Driver Timeline
                 </Link>
                 <Link
                   to="/baselines/C001"
@@ -348,7 +253,44 @@ const Shell: FC = () => {
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  Baselines
+                  Personal Baselines
+                </Link>
+
+                <div className="px-3 pt-2 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
+                  Mission Safety & Tools
+                </div>
+                <Link
+                  to="/triage"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isTriageActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Triage Priority Queue
+                </Link>
+                <Link
+                  to="/comms"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isCommsActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Earth Link & Copilot
+                </Link>
+                <Link
+                  to="/levers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isLeversActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Recovery Levers
                 </Link>
                 <Link
                   to="/trust"
@@ -359,7 +301,7 @@ const Shell: FC = () => {
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  Data Trust
+                  Data Trust Panel
                 </Link>
                 <Link
                   to="/report/C001"
@@ -370,16 +312,311 @@ const Shell: FC = () => {
                       : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                   }`}
                 >
-                  Report
+                  Commander Incident Report
                 </Link>
               </nav>
             )}
           </header>
+
+          {/* Features & Tools Pop-up Slide-over Drawer */}
+          {featuresDrawerOpen && (
+            <div
+              className="fixed inset-0 z-[70] overflow-hidden"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Features and Operational Tools"
+            >
+              {/* Dimmed Backdrop */}
+              <div
+                className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+                onClick={() => setFeaturesDrawerOpen(false)}
+                aria-hidden="true"
+              />
+
+              <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+                <div className="w-screen max-w-md bg-slate-900 border-l border-slate-700/80 shadow-2xl flex flex-col">
+                  {/* Drawer Header */}
+                  <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
+                    <div className="flex items-center gap-2.5">
+                      <LayoutGrid className="w-5 h-5 text-cyan-400" />
+                      <div>
+                        <h2 className="text-base font-bold text-white tracking-tight">
+                          Features & Operational Tools
+                        </h2>
+                        <p className="text-xs font-mono text-slate-400">
+                          Complete telemetry and mission suite
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFeaturesDrawerOpen(false)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-700/60 transition-colors"
+                      aria-label="Close features drawer"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Drawer Content Sections */}
+                  <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                    {/* Category 1: Mission Control */}
+                    <div>
+                      <h3 className="text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold mb-2.5 flex items-center gap-1.5">
+                        <Compass className="w-3.5 h-3.5" />
+                        <span>Mission Operations</span>
+                      </h3>
+                      <div className="space-y-1.5">
+                        <Link
+                          to="/crew"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isCrewActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white">Crew Board</div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Real-time 4-astronaut resilience dashboard & vitals
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/demo"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isDemoActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white">Mission Replay</div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Solar storm sequence playback across Sols 142–147
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/triage"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isTriageActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                              <span>Triage Priority Queue</span>
+                              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Autonomous medical priority ranking based on telemetry
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/report/C001"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isReportActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                              <span>Commander Incident Report</span>
+                              <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Printable mission debrief & telemetry synthesis
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Category 2: Biomedical & Physiology */}
+                    <div>
+                      <h3 className="text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold mb-2.5 flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5" />
+                        <span>Biomedical & Physiology</span>
+                      </h3>
+                      <div className="space-y-1.5">
+                        <Link
+                          to="/recovery"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isRecoveryActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white">Biomarker Recovery</div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              NASA OSDR post-flight multi-omics & recovery curves
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/drivers"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isDriversActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white">Driver Timeline</div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Multi-stressor compound risk timeline across sols
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/baselines/C001"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isBaselinesActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                              <span>Personal-Baseline Bands</span>
+                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Individualized mean ± 2σ biometric stability divergence
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* Category 3: Mission Safety & Protocols */}
+                    <div>
+                      <h3 className="text-xs font-mono uppercase tracking-wider text-cyan-400 font-semibold mb-2.5 flex items-center gap-1.5">
+                        <Radio className="w-3.5 h-3.5" />
+                        <span>Mission Safety & Protocols</span>
+                      </h3>
+                      <div className="space-y-1.5">
+                        <Link
+                          to="/comms"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isCommsActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                              <span>Earth-Link Comms</span>
+                              <Radio className="w-3.5 h-3.5 text-cyan-400" />
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Light-time delay dropout & autonomous copilot
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/levers"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isLeversActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                              <span>Recovery Levers</span>
+                              <Scale className="w-3.5 h-3.5 text-cyan-400" />
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Potential CRI points gained per restored factor
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/trust"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isTrustActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white flex items-center gap-1.5">
+                              <span>Data Trust & Ethics</span>
+                              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                            </div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              NASA OSDR provenance matrix & scientific boundaries
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+
+                        <Link
+                          to="/about"
+                          onClick={() => setFeaturesDrawerOpen(false)}
+                          className={`flex items-start justify-between p-3 rounded-lg border transition-all ${
+                            isAboutActive
+                              ? 'bg-cyan-950/60 border-cyan-700 text-cyan-200'
+                              : 'bg-slate-800/50 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-sm font-semibold text-white">Data & Method</div>
+                            <div className="text-xs text-slate-400 mt-0.5">
+                              Mathematical formulas, weights, and documentation
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-500 mt-1 shrink-0" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Drawer Footer */}
+                  <div className="p-4 border-t border-slate-800 bg-slate-950/70 text-xs text-slate-400 flex items-center justify-between font-mono">
+                    <span>SOL {sol}</span>
+                    <span className="text-[11px] text-cyan-400">ORBIT MAFIA // TELEMETRY</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
-      {/* Main page content */}
-      <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
+      <main id="main-content" className="flex-1">
         <Routes>
           <Route path="/" element={<CrewBoard />} />
           <Route path="/crew" element={<CrewBoardPage />} />
@@ -393,29 +630,26 @@ const Shell: FC = () => {
           <Route path="/comms" element={<CommsSimulationPage />} />
           <Route path="/levers" element={<RecoveryLeversPage />} />
           <Route path="/baselines/:id" element={<PersonalBaselinesPage />} />
-          <Route path="/baselines" element={<PersonalBaselinesPage />} />
           <Route path="/trust" element={<DataTrustPage />} />
           <Route path="/report/:id" element={<IncidentReportPage />} />
-          <Route path="/report" element={<IncidentReportPage />} />
-          <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
         </Routes>
       </main>
     </div>
   );
 };
 
-export const App: FC = () => {
+export function App() {
   return (
     <BrowserRouter>
-      <SolProvider>
-        <CosmosProvider>
-          {/* Animated ASCII universe behind every view; never takes pointer events */}
-          <CosmicBackdrop />
+      <CosmosProvider>
+        <CosmicBackdrop />
+        <CosmicSceneSwitcher />
+        <SolProvider>
           <Shell />
-        </CosmosProvider>
-      </SolProvider>
+        </SolProvider>
+      </CosmosProvider>
     </BrowserRouter>
   );
-};
+}
 
 export default App;

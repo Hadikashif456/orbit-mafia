@@ -35,7 +35,7 @@ export const IncidentReportView: FC<IncidentReportViewProps> = ({
   });
 
   return (
-    <article className="incident-report-print max-w-4xl mx-auto rounded-xl border border-slate-800 bg-slate-900/70 p-6 md:p-8 space-y-6 text-slate-100 print:bg-white print:text-black print:border-none print:p-0 print:m-0">
+    <article className="incident-report-print max-w-4xl mx-auto rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-xl p-6 md:p-8 space-y-6 text-slate-100 print:bg-white print:text-black print:border-none print:p-0 print:m-0">
       {/* Report Classification Header */}
       <header className="border-b border-slate-700/80 pb-5 space-y-2 print:border-black print:pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">

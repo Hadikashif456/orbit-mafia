@@ -1,5 +1,6 @@
 import { useState, type FC } from 'react';
 import { useRecoveryLevers } from '../hooks/useRecoveryLevers';
+import { useCrewSummaries } from '../hooks/useCrewSummaries';
 import { LeverBarChart } from '../components/levers/LeverBarChart';
 import { ProvenanceBadge } from '../components/ProvenanceBadge';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -7,16 +8,16 @@ import { StatusBadge } from '../components/crew/StatusBadge';
 import { statusToCrewStatus } from '../api/adapters';
 import type { Provenance } from '../api/types';
 
-const CREW_MEMBERS = [
-  { id: 'C001', callsign: 'Apex' },
-  { id: 'C002', callsign: 'Vanguard' },
-  { id: 'C003', callsign: 'Beacon' },
-  { id: 'C004', callsign: 'Nova' },
-];
+const DEFAULT_CREW = ['C001', 'C002', 'C003', 'C004'];
 
 const RecoveryLeversContent: FC = () => {
   const [selectedCrew, setSelectedCrew] = useState<string>('C002');
   const [selectedSol, setSelectedSol] = useState<number>(145);
+
+  const { data: crewList } = useCrewSummaries(selectedSol);
+  const crewMembers = crewList && crewList.length > 0
+    ? crewList.map((c) => ({ id: c.id, callsign: c.callsign }))
+    : DEFAULT_CREW.map((id) => ({ id, callsign: id }));
 
   const { data: criData, levers, totalDeficit, isLoading, isError, error, refetch } =
     useRecoveryLevers(selectedCrew, selectedSol);
@@ -33,18 +34,18 @@ const RecoveryLeversContent: FC = () => {
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           Recovery Levers & Potential CRI Gain
         </h1>
-        <p className="text-sm text-slate-400 max-w-3xl mt-1 leading-relaxed">
+        <p className="text-sm text-slate-300 max-w-3xl mt-1 leading-relaxed">
           Quantifies the exact points deducted from 100 CRI by each physiological risk factor. Returning a factor
           to baseline restores its deducted points.
         </p>
       </header>
 
       {/* Selectors */}
-      <section className="mb-6 p-4 rounded-xl border border-slate-800 bg-slate-900/50 flex flex-wrap items-center justify-between gap-4">
+      <section className="mb-6 p-4 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-lg flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-mono text-slate-400">Astronaut:</span>
           <div className="flex items-center gap-1.5">
-            {CREW_MEMBERS.map((c) => (
+            {crewMembers.map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -102,7 +103,7 @@ const RecoveryLeversContent: FC = () => {
       {criData && (
         <div className="space-y-6">
           {/* Summary Box */}
-          <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/70 backdrop-blur flex flex-wrap items-center justify-between gap-4">
+          <div className="p-5 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-lg flex flex-wrap items-center justify-between gap-4">
             <div>
               <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
                 Current Resilience Baseline
@@ -129,8 +130,8 @@ const RecoveryLeversContent: FC = () => {
           <LeverBarChart levers={levers} totalDeficit={totalDeficit} />
 
           {/* Mandatory Safety Notice */}
-          <div className="p-4 rounded-lg bg-slate-950/60 border border-slate-800 text-xs text-slate-400 leading-relaxed">
-            <span className="font-semibold text-slate-300">Upper bound:</span> assumes instant
+          <div className="p-4 rounded-lg bg-slate-950/90 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+            <span className="font-semibold text-white">Upper bound:</span> assumes instant
             recovery; the 3-sol window means real recovery lags. Calculations represent points subtracted from 100 CRI.
           </div>
         </div>

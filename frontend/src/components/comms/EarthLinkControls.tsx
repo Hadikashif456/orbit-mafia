@@ -17,7 +17,7 @@ export const EarthLinkControls: FC<EarthLinkControlsProps> = ({
   remainingSeconds,
 }) => {
   return (
-    <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/70 backdrop-blur shadow-lg flex flex-col gap-5">
+    <div className="p-5 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-xl flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <span className="text-xs font-mono uppercase text-slate-400 block tracking-wider">

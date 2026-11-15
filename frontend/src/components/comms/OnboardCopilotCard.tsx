@@ -43,7 +43,7 @@ export const OnboardCopilotCard: FC<OnboardCopilotCardProps> = ({ copilot, crewI
   };
 
   return (
-    <div className="p-5 rounded-xl border border-slate-800 bg-slate-900/70 backdrop-blur shadow-lg flex flex-col gap-4">
+    <div className="p-5 rounded-xl border border-slate-700/80 bg-slate-900/95 backdrop-blur shadow-xl flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
         <div className="flex items-center gap-3">
           <span className="font-mono text-xs px-2.5 py-1 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-800/60 uppercase">

@@ -34,7 +34,7 @@ export const VitalBandChart: FC<VitalBandChartProps> = ({ metric }) => {
 
   return (
     <article
-      className="p-4 rounded-xl border border-slate-800 bg-slate-900/70 backdrop-blur shadow flex flex-col gap-3"
+      className="p-4 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-xl flex flex-col gap-3"
       aria-label={`${label} personal baseline band chart`}
     >
       <div className="flex items-center justify-between">

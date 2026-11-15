@@ -1,22 +1,23 @@
 import { useState, type FC } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePersonalBaselines } from '../hooks/usePersonalBaselines';
+import { useCrewSummaries } from '../hooks/useCrewSummaries';
 import { VitalBandChart } from '../components/baselines/VitalBandChart';
 import { ProvenanceBadge } from '../components/ProvenanceBadge';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
-const CREW_LIST = [
-  { id: 'C001', callsign: 'Apex' },
-  { id: 'C002', callsign: 'Vanguard' },
-  { id: 'C003', callsign: 'Beacon' },
-  { id: 'C004', callsign: 'Nova' },
-];
+const DEFAULT_CREW = ['C001', 'C002', 'C003', 'C004'];
 
 const BaselinesContent: FC = () => {
   const { id: paramId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const crewId = paramId && /^C00[1-4]$/.test(paramId) ? paramId : 'C002';
   const [selectedSol, setSelectedSol] = useState<number>(145);
+
+  const { data: crewList } = useCrewSummaries(selectedSol);
+  const crewMembers = crewList && crewList.length > 0
+    ? crewList.map((c) => ({ id: c.id, callsign: c.callsign }))
+    : DEFAULT_CREW.map((id) => ({ id, callsign: id }));
 
   const { metrics, isLoading, isError, error, refetch } = usePersonalBaselines(crewId, selectedSol);
 
@@ -41,18 +42,18 @@ const BaselinesContent: FC = () => {
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
           Personal-Baseline Bands & Divergence
         </h1>
-        <p className="text-sm text-slate-400 max-w-3xl mt-1 leading-relaxed">
+        <p className="text-sm text-slate-300 max-w-3xl mt-1 leading-relaxed">
           Compares current telemetry against the astronaut&apos;s personal baseline (mean &plusmn; 2&sigma; established over Sol 1&ndash;14).
           Sols deviating beyond personal thresholds are highlighted.
         </p>
       </header>
 
       {/* Selectors */}
-      <section className="mb-6 p-4 rounded-xl border border-slate-800 bg-slate-900/50 flex flex-wrap items-center justify-between gap-4">
+      <section className="mb-6 p-4 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-lg flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-mono text-slate-400">Astronaut:</span>
           <div className="flex items-center gap-1.5">
-            {CREW_LIST.map((c) => (
+            {crewMembers.map((c) => (
               <button
                 key={c.id}
                 type="button"

@@ -28,7 +28,7 @@ export const TriageQueueCard: FC<TriageQueueCardProps> = ({ item }) => {
 
   return (
     <article
-      className="p-5 rounded-xl border border-slate-800 bg-slate-900/70 backdrop-blur shadow-lg flex flex-col gap-4"
+      className="p-5 rounded-xl border border-slate-700/80 bg-slate-900/95 shadow-xl flex flex-col gap-4"
       aria-label={`Triage rank ${rank}: ${member.callsign} (${member.id})`}
     >
       <div className="flex items-center justify-between gap-3">
