@@ -433,9 +433,13 @@ export const NotificationBell: FC = () => {
         )}
       </button>
 
-      {/* Dropdown Menu when clicked */}
+      {/* Dropdown Menu when clicked (anchored upwards so it is never hidden behind bottom of screen) */}
       {open && (
-        <div className="glass-dropdown absolute right-0 mt-2 w-80 sm:w-96 rounded-xl p-3 shadow-2xl z-[95]">
+        <div
+          className="glass-dropdown fixed bottom-24 inset-x-4 max-w-sm mx-auto sm:absolute sm:bottom-full sm:mb-3 sm:inset-x-auto sm:right-0 sm:w-96 rounded-xl p-3.5 shadow-2xl z-[95] flex flex-col max-h-[65vh] sm:max-h-[520px]"
+          role="region"
+          aria-label="Active Risk Alerts"
+        >
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-mono">
             <span className="font-bold text-white flex items-center gap-1.5">
               <Bell className="w-3.5 h-3.5 text-cyan-400" />
