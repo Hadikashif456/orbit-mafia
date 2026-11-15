@@ -1,22 +1,49 @@
 import { useEffect, type FC } from 'react';
+import { CosmicDreamscape } from '../cosmos/CosmicDreamscape';
 import { useCosmos } from '../cosmos/CosmosContext';
 import { ObsidianSolaris } from '../cosmos/ObsidianSolaris';
+import { SCENES } from '../cosmos/scenes';
 
+/**
+ * The backdrop reads scroll progress as 0..1 across every scene in SCENES.
+ * This page only stacks the first screens, so a full scroll here must stop on
+ * its last screen (Cosmic Dreamscape) rather than run on to the later scenes.
+ */
+const LAST_SCREEN = SCENES.findIndex((s) => s.id === 'dreamscape');
+const PROGRESS_SPAN = LAST_SCREEN / (SCENES.length - 1);
+
+/**
+ * Home: two full-height screens in one scroll. Screen 1 is Obsidian Solaris
+ * with the team name; screen 2 is Cosmic Dreamscape with nothing on top of it.
+ * There are no on-screen controls: drag up/down or Ctrl + wheel moves in and
+ * out, the arrow keys drift, double-click resets (see CameraController.attach).
+ */
 export const CrewBoard: FC = () => {
-  const { scene, setScene, setImmersive } = useCosmos();
+  const { scene, setScene, setImmersive, scrollProgress } = useCosmos();
 
   useEffect(() => {
     const previousScene = scene;
+    const measure = (): void => {
+      const range = document.documentElement.scrollHeight - window.innerHeight;
+      const along = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0;
+      scrollProgress.current = along * PROGRESS_SPAN;
+    };
+    measure();
     setScene('solaris');
     setImmersive(true);
+    window.addEventListener('scroll', measure, { passive: true });
+    window.addEventListener('resize', measure);
     return () => {
+      window.removeEventListener('scroll', measure);
+      window.removeEventListener('resize', measure);
       setScene(previousScene);
       setImmersive(false);
+      scrollProgress.current = 0;
     };
-  }, [setImmersive, setScene]);
+  }, [scrollProgress, setImmersive, setScene]);
 
   return (
-    <section aria-label="Obsidian Solaris" className="relative cursor-ns-resize select-none">
+    <section aria-label="Cosmic screens" className="relative cursor-ns-resize select-none">
       <div className="relative">
         <ObsidianSolaris />
         <div
@@ -32,6 +59,7 @@ export const CrewBoard: FC = () => {
           </p>
         </div>
       </div>
+      <CosmicDreamscape />
     </section>
   );
 };
