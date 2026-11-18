@@ -38,7 +38,7 @@ export function useCriRange(
     },
     enabled: Boolean(crewId),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    retry: 0,
     refetchOnWindowFocus: false,
   });
 

@@ -49,19 +49,19 @@ export const AlertScreen: FC = () => {
 
   if (criLoading || copilotLoading) {
     return (
-      <main className="alert-screen">
+      <section className="alert-screen">
         <p className="text-slate-300">Loading risk assessment and Copilot countermeasures...</p>
-      </main>
+      </section>
     );
   }
 
   if (criError || copilotError || !copilot) {
     return (
-      <main className="alert-screen">
+      <section className="alert-screen">
         <p className="text-rose-400">
           Failed to load alert data: {criError?.message || copilotError?.message || 'Alert data is unavailable.'}
         </p>
-      </main>
+      </section>
     );
   }
 
@@ -70,7 +70,7 @@ export const AlertScreen: FC = () => {
   const heading = band === 'Amber' ? 'Warning' : band === 'Red' ? 'Alert' : 'Normal';
 
   return (
-    <main className="alert-screen">
+    <section className="alert-screen">
       <article className={`alert-card alert-card--${alertTone}`} aria-labelledby="alert-heading">
         <div className="alert-card-heading">
           <div>
@@ -82,7 +82,7 @@ export const AlertScreen: FC = () => {
           </div>
           <div className="flex items-center gap-3">
             {!isSupported() ? (
-              <span className="text-xs font-mono text-slate-500 italic">
+              <span className="text-xs font-mono text-slate-300 italic">
                 Narration unavailable in this browser
               </span>
             ) : (
@@ -134,6 +134,6 @@ export const AlertScreen: FC = () => {
         </div>
         <p className="alert-disclaimer">{copilot.disclaimer}</p>
       </article>
-    </main>
+    </section>
   );
 };

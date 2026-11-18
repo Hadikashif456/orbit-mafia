@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getCrew, getCri, getTrend, getVitals } from '../api/endpoints';
 import { toDailyRows, toDetailSnapshot } from '../api/adapters';
+import type { CrewSummary } from '../api/types';
 import type { DailyRow, DetailSnapshot } from '../types/astronaut';
 
 export interface AstronautDetailResult {
@@ -9,6 +10,8 @@ export interface AstronautDetailResult {
 }
 
 export function useAstronautDetail(id: string | undefined, sol?: number) {
+  const queryClient = useQueryClient();
+
   return useQuery<AstronautDetailResult>({
     queryKey: ['astronaut-detail', id, sol],
     queryFn: async () => {
@@ -16,9 +19,11 @@ export function useAstronautDetail(id: string | undefined, sol?: number) {
         throw new Error('No astronaut ID provided');
       }
 
-      // Fetch summary, CRI calculation, 30-day trend, 30-day vitals, and baseline vitals in parallel
+      // Reuse already-cached crew summaries to save a redundant network call
+      const cachedCrew = queryClient.getQueryData<CrewSummary[]>(['crew', sol]);
+
       const [summaries, criResult, trend30, vitals30, baselineVitals] = await Promise.all([
-        getCrew(sol),
+        cachedCrew ? Promise.resolve(cachedCrew) : getCrew(sol),
         getCri(id, sol),
         getTrend(id, 30, sol),
         getVitals(id, 30, sol),
@@ -45,8 +50,8 @@ export function useAstronautDetail(id: string | undefined, sol?: number) {
       return { snapshot, rows };
     },
     enabled: Boolean(id),
-    staleTime: 30000,
-    retry: 1,
+    staleTime: 5 * 60 * 1000,
+    retry: 0,
     refetchOnWindowFocus: false,
   });
 }

@@ -1,6 +1,8 @@
-import { useState, useEffect, type FC } from 'react';
+import { useState, useEffect, lazy, Suspense, type FC } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
+  Menu,
   X,
   LayoutGrid,
   ChevronRight,
@@ -9,37 +11,65 @@ import {
   ShieldCheck,
   Scale,
   FileText,
+  RefreshCw,
 } from 'lucide-react';
 import { CrewBoard } from './pages/CrewBoard';
-import { CrewBoardPage } from './pages/CrewBoardPage';
-import { AstronautDetail } from './pages/AstronautDetail';
-import { AlertScreen } from './pages/AlertScreen';
-import { DemoMode } from './pages/DemoMode';
-import { DataMethod } from './pages/DataMethod';
-import { BiomarkerRecovery } from './pages/BiomarkerRecovery';
-import { DriverTimeline } from './pages/DriverTimeline';
-import { TriageQueuePage } from './pages/TriageQueuePage';
-import { CommsSimulationPage } from './pages/CommsSimulationPage';
-import { RecoveryLeversPage } from './pages/RecoveryLeversPage';
-import { PersonalBaselinesPage } from './pages/PersonalBaselinesPage';
-import { DataTrustPage } from './pages/DataTrustPage';
-import { IncidentReportPage } from './pages/IncidentReportPage';
 import { CosmosProvider } from './cosmos/CosmosContext';
 import { CosmicBackdrop } from './cosmos/CosmicBackdrop';
-import { CosmicSceneSwitcher } from './cosmos/CosmicSceneSwitcher';
 import { SolProvider, useMissionSol } from './context/SolContext';
+import { resetBackendOfflineFlag } from './api/client';
 import { OrbitMafiaLogo } from './components/OrbitMafiaLogo';
 import { AlertPopupHost, NotificationBell } from './components/alerts/AlertPopupHost';
 import './styles/alertPopup.css';
 
+// Lazy-load secondary routes so initial landing page skips Recharts & heavy sub-views
+const CrewBoardPage = lazy(() => import('./pages/CrewBoardPage').then((m) => ({ default: m.CrewBoardPage })));
+const AstronautDetail = lazy(() => import('./pages/AstronautDetail').then((m) => ({ default: m.AstronautDetail })));
+const AlertScreen = lazy(() => import('./pages/AlertScreen').then((m) => ({ default: m.AlertScreen })));
+const DemoMode = lazy(() => import('./pages/DemoMode').then((m) => ({ default: m.DemoMode })));
+const DataMethod = lazy(() => import('./pages/DataMethod').then((m) => ({ default: m.DataMethod })));
+const BiomarkerRecovery = lazy(() => import('./pages/BiomarkerRecovery').then((m) => ({ default: m.BiomarkerRecovery })));
+const DriverTimeline = lazy(() => import('./pages/DriverTimeline').then((m) => ({ default: m.DriverTimeline })));
+const TriageQueuePage = lazy(() => import('./pages/TriageQueuePage').then((m) => ({ default: m.TriageQueuePage })));
+const CommsSimulationPage = lazy(() => import('./pages/CommsSimulationPage').then((m) => ({ default: m.CommsSimulationPage })));
+const RecoveryLeversPage = lazy(() => import('./pages/RecoveryLeversPage').then((m) => ({ default: m.RecoveryLeversPage })));
+const PersonalBaselinesPage = lazy(() => import('./pages/PersonalBaselinesPage').then((m) => ({ default: m.PersonalBaselinesPage })));
+const DataTrustPage = lazy(() => import('./pages/DataTrustPage').then((m) => ({ default: m.DataTrustPage })));
+const IncidentReportPage = lazy(() => import('./pages/IncidentReportPage').then((m) => ({ default: m.IncidentReportPage })));
+const CosmicSceneSwitcher = lazy(() => import('./cosmos/CosmicSceneSwitcher').then((m) => ({ default: m.CosmicSceneSwitcher })));
+
+const RouteFallback: FC = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono text-cyan-300">
+      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+      <span>Loading telemetry view...</span>
+    </div>
+  </div>
+);
+
 const Shell: FC = () => {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { sol } = useMissionSol();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [featuresDrawerOpen, setFeaturesDrawerOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
+  const handleSync = async () => {
+    setIsSyncing(true);
+    resetBackendOfflineFlag();
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setTimeout(() => {
+        setIsSyncing(false);
+      }, 400);
+    }
+  };
 
   // Close menus on route change
   useEffect(() => {
+    setMobileMenuOpen(false);
     setFeaturesDrawerOpen(false);
   }, [location.pathname]);
 
@@ -48,7 +78,8 @@ const Shell: FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setFeaturesDrawerOpen(false);
-          }
+        setMobileMenuOpen(false);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -90,15 +121,264 @@ const Shell: FC = () => {
 
       {!fullBleed && (
         <>
-          {/* Top Brand Header (Centered Logo) */}
-          <header className="pt-4 pb-2 px-4 flex items-center justify-center relative z-30">
-            <Link
-              to="/"
-              className="flex items-center shrink-0 hover:opacity-90 transition-opacity"
-              aria-label="Orbit Mafia Home"
-            >
-              <OrbitMafiaLogo className="h-8 sm:h-9 w-auto" />
-            </Link>
+          {/* Navigation header with all features clearly displayed at the top */}
+          <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 sm:px-6 py-3 sticky top-0 z-50">
+            <div className="container mx-auto flex items-center justify-between">
+              {/* Left: Brand Logo */}
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  to="/"
+                  className="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2"
+                >
+                  <OrbitMafiaLogo className="h-7 sm:h-8 w-auto" />
+                </Link>
+              </div>
+
+              {/* Center: Primary Navigation Links */}
+              <nav
+                className="hidden md:flex items-center gap-2 lg:gap-4 text-sm font-medium"
+                aria-label="Main Navigation"
+              >
+                <Link
+                  to="/crew"
+                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                    isCrewActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  Crew Board
+                </Link>
+                <Link
+                  to="/demo"
+                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                    isDemoActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  Mission Replay
+                </Link>
+                <Link
+                  to="/triage"
+                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                    isTriageActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  Triage
+                </Link>
+                <Link
+                  to="/comms"
+                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                    isCommsActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  Comms Lag
+                </Link>
+                <Link
+                  to="/recovery"
+                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                    isRecoveryActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  Recovery
+                </Link>
+                <Link
+                  to="/drivers"
+                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                    isDriversActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  Drivers
+                </Link>
+                <Link
+                  to="/about"
+                  className={`transition-colors py-1.5 px-3 rounded-md ${
+                    isAboutActive
+                      ? 'text-cyan-300 font-semibold bg-slate-800/80 border border-cyan-800/50'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                  }`}
+                >
+                  Data & Method
+                </Link>
+              </nav>
+
+              {/* Right: Features Drawer Button + Sol Badge + Mobile Menu Toggle */}
+              <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                <NotificationBell />
+
+                <button
+                  type="button"
+                  onClick={() => setFeaturesDrawerOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium text-cyan-300 bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-700/70 transition-all shadow-sm shadow-cyan-950/50 cursor-pointer"
+                  aria-label="Open Features and Tools drawer"
+                  aria-expanded={featuresDrawerOpen}
+                >
+                  <LayoutGrid className="w-4 h-4 text-cyan-400" />
+                  <span className="hidden sm:inline">All Features</span>
+                  <span className="sm:hidden">Features</span>
+                </button>
+
+                <div className="text-xs font-mono text-slate-300 px-2.5 py-1 rounded bg-slate-800/80 border border-slate-700/60 shrink-0">
+                  SOL {sol}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleSync}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono text-cyan-300 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 hover:border-cyan-500/50 transition-all cursor-pointer"
+                  title="Synchronize and refresh mission telemetry"
+                  aria-label="Refresh telemetry data"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-cyan-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden xl:inline">Sync</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen((prev) => !prev)}
+                  className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white bg-slate-800/70 border border-slate-700/70 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors"
+                  aria-label="Toggle navigation menu"
+                  aria-expanded={mobileMenuOpen}
+                >
+                  {mobileMenuOpen ? <X className="w-5 h-5 text-cyan-400" /> : <Menu className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Dropdown Navigation Menu */}
+            {mobileMenuOpen && (
+              <nav
+                className="md:hidden mt-3 pt-3 border-t border-slate-800/80 flex flex-col gap-1 pb-2 max-h-[75vh] overflow-y-auto"
+                aria-label="Mobile Navigation"
+              >
+                <div className="px-3 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
+                  Core Views
+                </div>
+                <Link
+                  to="/crew"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isCrewActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Crew Board
+                </Link>
+                <Link
+                  to="/demo"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isDemoActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Mission Replay
+                </Link>
+                <Link
+                  to="/triage"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isTriageActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Triage Queue
+                </Link>
+                <Link
+                  to="/comms"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isCommsActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Comms Delay Simulation
+                </Link>
+                <Link
+                  to="/recovery"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isRecoveryActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Biomarker Recovery
+                </Link>
+                <Link
+                  to="/drivers"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isDriversActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Drivers Timeline
+                </Link>
+                <Link
+                  to="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isAboutActive
+                      ? 'bg-cyan-950/70 text-cyan-300 font-semibold border border-cyan-800/60'
+                      : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Data & Method
+                </Link>
+                <div className="border-t border-slate-800/80 my-1 pt-1">
+                  <div className="px-3 py-1 text-[11px] font-mono uppercase text-slate-400 tracking-wider">
+                    Advanced Tools
+                  </div>
+                  <Link
+                    to="/levers"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
+                  >
+                    <span>Recovery Levers</span>
+                    <Scale className="w-3.5 h-3.5 text-cyan-400" />
+                  </Link>
+                  <Link
+                    to="/baselines/C001"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
+                  >
+                    <span>Personal Baselines</span>
+                    <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                  </Link>
+                  <Link
+                    to="/trust"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
+                  >
+                    <span>Data Trust & Ethics</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                  </Link>
+                  <Link
+                    to="/report/C001"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-3 py-2 rounded-lg text-sm text-slate-300 hover:bg-slate-800 hover:text-white flex items-center justify-between"
+                  >
+                    <span>Incident Reports</span>
+                    <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                  </Link>
+                </div>
+              </nav>
+            )}
           </header>
 
           {/* Features Drawer */}
@@ -109,9 +389,9 @@ const Shell: FC = () => {
                 onClick={() => setFeaturesDrawerOpen(false)}
               />
               <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-                <div className="w-screen max-w-md glass-dropdown border-l border-white/[0.1] flex flex-col shadow-2xl">
+                <div className="w-screen max-w-md bg-slate-900 border-l border-slate-800 flex flex-col shadow-2xl">
                   {/* Drawer Header */}
-                  <div className="p-4 sm:p-6 border-b border-white/[0.08] flex items-center justify-between bg-slate-950/40 backdrop-blur-md">
+                  <div className="p-4 sm:p-6 border-b border-slate-800 flex items-center justify-between bg-slate-950/50">
                     <div className="flex items-center gap-2">
                       <LayoutGrid className="w-5 h-5 text-cyan-400" />
                       <h2 className="text-base font-bold text-white tracking-tight">Features & Advanced Tools</h2>
@@ -295,133 +575,48 @@ const Shell: FC = () => {
               </div>
             </div>
           )}
-          {/* Floating Controls & Navigation Dock (matching photo) */}
-          <aside
-            className="fixed bottom-4 sm:bottom-6 inset-x-0 z-40 flex flex-col items-center pointer-events-none px-4 gap-2.5"
-            aria-label="Floating Navigation and Utilities"
-          >
-            {/* Top Row: Utilities (Notification Bell + All Features + Sol Counter) */}
-            <div className="pointer-events-auto flex items-center gap-2.5 sm:gap-3">
-              <NotificationBell />
-
-              <button
-                type="button"
-                onClick={() => setFeaturesDrawerOpen(true)}
-                className="glass-btn-features flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium text-cyan-300 cursor-pointer"
-                aria-label="Open Features and Tools drawer"
-                aria-expanded={featuresDrawerOpen}
-              >
-                <LayoutGrid className="w-4 h-4 text-cyan-400" />
-                <span>All Features</span>
-              </button>
-
-              <div className="glass-btn-sm text-xs font-mono text-slate-300 px-3 py-1.5 rounded-lg shrink-0">
-                SOL {sol}
-              </div>
-            </div>
-
-            {/* Bottom Row: Navigation Dock */}
-            <nav
-              className="pointer-events-auto flex items-center gap-1 sm:gap-2 px-4 py-2 rounded-full bg-slate-900/80 backdrop-blur-2xl border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.65)] max-w-[calc(100vw-2rem)] overflow-x-auto scrollbar-none"
-              aria-label="Primary Navigation"
-            >
-              <Link
-                to="/crew"
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  isCrewActive
-                    ? 'text-cyan-300 bg-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Crew Board
-              </Link>
-              <Link
-                to="/demo"
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  isDemoActive
-                    ? 'text-cyan-300 bg-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Mission Replay
-              </Link>
-              <Link
-                to="/triage"
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  isTriageActive
-                    ? 'text-cyan-300 bg-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Triage
-              </Link>
-              <Link
-                to="/comms"
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  isCommsActive
-                    ? 'text-cyan-300 bg-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Comms Lag
-              </Link>
-              <Link
-                to="/recovery"
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  isRecoveryActive
-                    ? 'text-cyan-300 bg-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Recovery
-              </Link>
-              <Link
-                to="/drivers"
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  isDriversActive
-                    ? 'text-cyan-300 bg-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Drivers
-              </Link>
-              <Link
-                to="/about"
-                className={`px-3 sm:px-3.5 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
-                  isAboutActive
-                    ? 'text-cyan-300 bg-white/10'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Data & Method
-              </Link>
-            </nav>
-          </aside>
         </>
       )}
 
       {/* Main page content */}
-      <main id="main-content" className="flex-1 focus:outline-none pb-28 sm:pb-32" tabIndex={-1}>
-        <Routes>
-          <Route path="/" element={<CrewBoard />} />
-          <Route path="/crew" element={<CrewBoardPage />} />
-          <Route path="/crew/:id" element={<AstronautDetail />} />
-          <Route path="/alert/:id" element={<AlertScreen />} />
-          <Route path="/demo" element={<DemoMode />} />
-          <Route path="/about" element={<DataMethod />} />
-          <Route path="/recovery" element={<BiomarkerRecovery />} />
-          <Route path="/drivers" element={<DriverTimeline />} />
-          <Route path="/triage" element={<TriageQueuePage />} />
-          <Route path="/comms" element={<CommsSimulationPage />} />
-          <Route path="/levers" element={<RecoveryLeversPage />} />
-          <Route path="/baselines/:id" element={<PersonalBaselinesPage />} />
-          <Route path="/baselines" element={<PersonalBaselinesPage />} />
-          <Route path="/trust" element={<DataTrustPage />} />
-          <Route path="/report/:id" element={<IncidentReportPage />} />
-          <Route path="/report" element={<IncidentReportPage />} />
-          <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
-        </Routes>
+      <main id="main-content" className="flex-1 focus:outline-none" tabIndex={-1}>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<CrewBoard />} />
+            <Route path="/crew" element={<CrewBoardPage />} />
+            <Route path="/crew/:id" element={<AstronautDetail />} />
+            <Route path="/alert/:id" element={<AlertScreen />} />
+            <Route path="/demo" element={<DemoMode />} />
+            <Route path="/about" element={<DataMethod />} />
+            <Route path="/recovery" element={<BiomarkerRecovery />} />
+            <Route path="/drivers" element={<DriverTimeline />} />
+            <Route path="/triage" element={<TriageQueuePage />} />
+            <Route path="/comms" element={<CommsSimulationPage />} />
+            <Route path="/levers" element={<RecoveryLeversPage />} />
+            <Route path="/baselines/:id" element={<PersonalBaselinesPage />} />
+            <Route path="/baselines" element={<PersonalBaselinesPage />} />
+            <Route path="/trust" element={<DataTrustPage />} />
+            <Route path="/report/:id" element={<IncidentReportPage />} />
+            <Route path="/report" element={<IncidentReportPage />} />
+            <Route path="/cosmos/*" element={<CosmicSceneSwitcher />} />
+          </Routes>
+        </Suspense>
       </main>
+
+      {!fullBleed && (
+        <footer className="border-t border-slate-800/80 bg-slate-950/90 py-4 px-4 sm:px-6 text-center text-xs text-slate-300 font-mono z-20 relative">
+          <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span className="text-slate-300 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              ORBIT MAFIA // AUTONOMOUS CREW HEALTH GUARDIAN
+            </span>
+            <span className="text-slate-400">
+              Risk flags and suggested countermeasures only. Not a medical diagnosis.
+            </span>
+            <span className="text-cyan-400/90">SOL {sol} TELEMETRY</span>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };

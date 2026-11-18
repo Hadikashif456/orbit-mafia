@@ -7,12 +7,20 @@ import copilotCachedMock from '../mocks/copilot_cached.json';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
-const DEFAULT_TIMEOUT_MS = 8000;
+const DEFAULT_TIMEOUT_MS = 6000;
+const COPILOT_TIMEOUT_MS = 10000;
+const OFFLINE_COOLDOWN_MS = 15000;
 
 let mockInUse = USE_MOCK;
+let backendOfflineUntil = 0;
 
 export function isUsingMock(): boolean {
   return mockInUse;
+}
+
+export function resetBackendOfflineFlag(): void {
+  backendOfflineUntil = 0;
+  mockInUse = USE_MOCK;
 }
 
 export class ApiError extends Error {
@@ -43,6 +51,29 @@ function resolveMockData(path: string): unknown {
   if (cleanPath === '/copilot/explain') {
     return copilotCachedMock;
   }
+  if (cleanPath === '/provenance') {
+    return {
+      datasets: [
+        {
+          id: 'OSD-575',
+          title: 'Inspiration4 Spaceflight Biomarkers & Blood Panels (LSDS-8)',
+          citation: 'NASA Open Science Data Repository (OSDR), OSD-575 / LSDS-8',
+          accessDate: '2026-04-01',
+          provenance: 'REAL_OSDR',
+        },
+        {
+          id: 'SYNTH-42',
+          title: 'Mars Transit Continuous Telemetry Stream (Seed 42)',
+          citation: 'Orbit Mafia Reproducible Synthetic Telemetry Generator',
+          accessDate: '2026-04-01',
+          provenance: 'SYNTHETIC',
+        },
+      ],
+      syntheticFields: ['heartRate', 'hrv', 'sleepHours', 'radiationMsv', 'exerciseMin', 'mood'],
+      replayNote: 'Replays real OSDR biomarker timepoints against a synthetic Mars-transit timeline for illustration.',
+      policy: 'Risk flags and suggested countermeasures only. Not a medical diagnosis.',
+    };
+  }
   if (cleanPath.startsWith('/crew/') && cleanPath.endsWith('/cri/range')) {
     const parts = cleanPath.split('/');
     const crewId = parts[2] || 'C001';
@@ -64,11 +95,11 @@ function resolveMockData(path: string): unknown {
           inflammation: 2.1,
         },
         weights: {
-          radiation: 0.25,
+          radiation: 0.30,
           sleep: 0.25,
-          cardio: 0.2,
-          mood: 0.15,
-          inflammation: 0.15,
+          cardio: 0.25,
+          mood: 0.10,
+          inflammation: 0.10,
         },
         formulaVersion: 'v1',
         provenance: 'SYNTHETIC+REAL_OSDR',
@@ -94,11 +125,11 @@ function resolveMockData(path: string): unknown {
         inflammation: 2.1,
       },
       weights: {
-        radiation: 0.25,
+        radiation: 0.30,
         sleep: 0.25,
-        cardio: 0.2,
-        mood: 0.15,
-        inflammation: 0.15,
+        cardio: 0.25,
+        mood: 0.10,
+        inflammation: 0.10,
       },
       formulaVersion: 'v1',
       provenance: 'SYNTHETIC+REAL_OSDR',
@@ -119,7 +150,7 @@ function resolveMockData(path: string): unknown {
 }
 
 /**
- * Fetch wrapper with strict 8s timeout, Zod validation, and offline mock fallback.
+ * Fetch wrapper with snappy timeout, Zod validation, offline cooldown, and static mock fallback.
  *
  * @param path Endpoint path relative to /api/v1 (e.g. '/crew')
  * @param schema Zod schema to validate response against
@@ -130,17 +161,20 @@ export async function apiClient<T>(
   schema: z.ZodType<T, any, any>,
   options: RequestInit = {}
 ): Promise<T> {
-  if (USE_MOCK) {
+  if (USE_MOCK || Date.now() < backendOfflineUntil) {
     const mock = resolveMockData(path);
     if (mock !== undefined) {
       mockInUse = true;
       return schema.parse(mock);
     }
-    throw new ApiError(404, 'MOCK_NOT_FOUND', `No mock available for path: ${path}`);
+    if (USE_MOCK) {
+      throw new ApiError(404, 'MOCK_NOT_FOUND', `No mock available for path: ${path}`);
+    }
   }
 
+  const timeoutMs = path.startsWith('/copilot/') ? COPILOT_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -164,6 +198,8 @@ export async function apiClient<T>(
     }
 
     const data = await response.json();
+    mockInUse = false;
+    backendOfflineUntil = 0;
     return schema.parse(data);
   } catch (err: unknown) {
     clearTimeout(timer);
@@ -174,7 +210,8 @@ export async function apiClient<T>(
       throw err;
     }
 
-    // On network failure or timeout, fallback to static /src/mocks
+    // On network failure or timeout, set short offline cooldown and fallback to static /src/mocks
+    backendOfflineUntil = Date.now() + OFFLINE_COOLDOWN_MS;
     const mock = resolveMockData(path);
     if (mock !== undefined) {
       mockInUse = true;

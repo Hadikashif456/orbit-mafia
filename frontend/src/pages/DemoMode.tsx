@@ -29,15 +29,22 @@ export const DemoMode: FC = () => {
   const [narrationEnabled, setNarrationEnabled] = useState<boolean>(true);
   const spokenAlertIdsRef = useRef<Set<string>>(new Set());
 
-  // Prefetch scenario for every sol in replay window on mount
+  // Prefetch remaining replay sols sequentially in the background so initial render stays instant
   useEffect(() => {
-    for (let s = REPLAY_FIRST_SOL; s <= REPLAY_LAST_SOL; s++) {
-      queryClient.prefetchQuery({
-        queryKey: ['scenario', s],
-        queryFn: () => getScenario(s),
-        staleTime: 30000,
-      });
-    }
+    let cancelled = false;
+    (async () => {
+      for (let s = REPLAY_FIRST_SOL + 1; s <= REPLAY_LAST_SOL; s++) {
+        if (cancelled) return;
+        await queryClient.prefetchQuery({
+          queryKey: ['scenario', s],
+          queryFn: () => getScenario(s),
+          staleTime: 5 * 60 * 1000,
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [queryClient]);
 
   // Cancel any active speech on unmount

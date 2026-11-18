@@ -30,14 +30,14 @@ export const AstronautDetail: FC = () => {
     return () => setScene(previousScene);
   }, [setScene]);
 
-  if (loading) return <main className="detail-screen"><p className="detail-role">Loading astronaut telemetry...</p></main>;
-  if (error || !snapshot) return <main className="detail-screen"><p className="detail-role">{error ?? 'Astronaut data is unavailable.'}</p></main>;
+  if (loading) return <section className="detail-screen"><p className="detail-role">Loading astronaut telemetry...</p></section>;
+  if (error || !snapshot) return <section className="detail-screen"><p className="detail-role">{error ?? 'Astronaut data is unavailable.'}</p></section>;
 
   const activeTab = snapshot.band === 'Green' ? (tab === 'status' ? 'profile' : tab) : tab;
   const setActiveTab = (next: DetailTab): void => setTab(next);
 
   return (
-    <main className="detail-screen" data-glass={glass}>
+    <section className="detail-screen" data-glass={glass}>
       <div className="detail-layout">
         <header className="detail-title-row">
           <div className="flex items-center gap-3">
@@ -66,6 +66,6 @@ export const AstronautDetail: FC = () => {
           {activeTab === 'status' && <aside className="detail-info-panel"><StatusCard snapshot={snapshot} /></aside>}
         </div>
       </div>
-    </main>
+    </section>
   );
 };

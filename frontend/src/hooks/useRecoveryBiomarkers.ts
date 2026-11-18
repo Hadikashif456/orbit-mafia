@@ -10,8 +10,8 @@ export function useRecoveryBiomarkers(
     queries: crewIds.map((id) => ({
       queryKey: ['biomarkers', id, undefined, panel],
       queryFn: () => getBiomarkers(id, undefined, panel),
-      staleTime: 30000,
-      retry: 1,
+      staleTime: 5 * 60 * 1000,
+      retry: 0,
       refetchOnWindowFocus: false,
     })),
   });

@@ -8,12 +8,14 @@ Contract:
 - get_vitals_window returns exactly `window` vitals points ending at `sol` (fewer only if sol < window).
 - If database file or tables are missing or inaccessible, raises DataUnavailableError without exposing internal file paths.
 - Never falls back to fake or hardcoded mock data.
+- Read-only results are cached in memory keyed by (resolved DB path, file mtime_ns) so repeat API calls respond in milliseconds while remaining 100% isolated across tests and DB updates.
 """
 
+from functools import lru_cache
 import re
 import sqlite3
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from app.config import settings
 from app.models import VitalPoint, Biomarker
@@ -51,7 +53,7 @@ class DataUnavailableError(Exception):
     pass
 
 
-def _get_connection() -> sqlite3.Connection:
+def _resolve_db_path() -> Path:
     db_path = Path(settings.DB_PATH)
     if not db_path.exists():
         repo_root = Path(__file__).resolve().parents[3]
@@ -64,7 +66,21 @@ def _get_connection() -> sqlite3.Connection:
                 db_path = cand2
             else:
                 raise DataUnavailableError("Database service is unavailable")
-    uri = f"file:{db_path.resolve().as_posix()}?mode=ro"
+    return db_path.resolve()
+
+
+def _db_cache_key() -> Tuple[str, int]:
+    resolved = _resolve_db_path()
+    try:
+        mtime_ns = resolved.stat().st_mtime_ns
+    except OSError:
+        raise DataUnavailableError("Database service is unavailable") from None
+    return (resolved.as_posix(), mtime_ns)
+
+
+def _get_connection(resolved_posix: Optional[str] = None) -> sqlite3.Connection:
+    posix = resolved_posix if resolved_posix is not None else _resolve_db_path().as_posix()
+    uri = f"file:{posix}?mode=ro"
     try:
         conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
         conn.row_factory = sqlite3.Row
@@ -73,18 +89,19 @@ def _get_connection() -> sqlite3.Connection:
         raise DataUnavailableError("Database service is unavailable") from None
 
 
-def get_vitals_history(crew_id: str, sol: int, window: int = 14) -> List[VitalPoint]:
-    """Retrieves physiological vitals for crew member up to sol across window, plus baseline (Sol 1-14)."""
-    conn = _get_connection()
-    start_sol = max(1, sol - window + 1)
+@lru_cache(maxsize=64)
+def _load_crew_vitals(db_posix: str, mtime_ns: int, crew_id: str) -> Tuple[VitalPoint, ...]:
+    """Loads all vitals rows for a crew member from read-only SQLite, sorted ascending by sol."""
+    _ = mtime_ns
+    conn = _get_connection(db_posix)
     query = """
         SELECT crew_id, sol, hr, hrv, sleep_hours, radiation_msv, exercise_min, mood, provenance
         FROM vitals
-        WHERE crew_id = ? AND ((sol BETWEEN 1 AND 14) OR (sol BETWEEN ? AND ?))
+        WHERE crew_id = ?
         ORDER BY sol ASC
     """
     try:
-        cursor = conn.execute(query, (crew_id, start_sol, sol))
+        cursor = conn.execute(query, (crew_id,))
         rows = cursor.fetchall()
     except sqlite3.OperationalError:
         raise DataUnavailableError("Database service is unavailable") from None
@@ -111,27 +128,31 @@ def get_vitals_history(crew_id: str, sol: int, window: int = 14) -> List[VitalPo
                 provenance=r["provenance"],
             )
         )
-    return results
+    return tuple(results)
 
 
-def get_biomarkers(
+def get_vitals_history(crew_id: str, sol: int, window: int = 14) -> List[VitalPoint]:
+    """Retrieves physiological vitals for crew member up to sol across window, plus baseline (Sol 1-14)."""
+    db_posix, mtime_ns = _db_cache_key()
+    all_vitals = _load_crew_vitals(db_posix, mtime_ns, crew_id)
+    start_sol = max(1, sol - window + 1)
+    return [
+        v for v in all_vitals
+        if (1 <= v.sol <= 14) or (start_sol <= v.sol <= sol)
+    ]
+
+
+@lru_cache(maxsize=128)
+def _load_crew_biomarkers(
+    db_posix: str,
+    mtime_ns: int,
     crew_id: str,
-    panel: Optional[str] = None,
-    names: Optional[List[str]] = None,
-    for_cri: bool = False,
-) -> List[Biomarker]:
-    """Retrieves blood biomarkers for astronaut across NASA OSDR timepoints in chronological order.
-
-    Normalizes analyte names to canonical form before rows reach cri_engine ("Il 6", "Il6", "IL-6" -> "IL-6").
-    Dedupes identical rows within the same panel and unit.
-    For CRI (for_cri=True), selects only one preferred panel per canonical marker (CARDIO_EVE > IMMUNE_HD71 > INFLAMMATION_ALAMAR > CMP).
-    For router filtering:
-      - Default (panel=None, names=None): short list of CRP, Fibrinogen plus the CMP panel.
-      - panel='all': all panels returned.
-      - panel=<panel_name>: filtered to that specific panel.
-      - names=[...]: filtered to matching analytes (case/space/dash insensitive).
-    """
-    conn = _get_connection()
+    panel: Optional[str],
+    norm_names_key: Optional[Tuple[str, ...]],
+    for_cri: bool,
+) -> Tuple[Biomarker, ...]:
+    _ = mtime_ns
+    conn = _get_connection(db_posix)
     query = """
         SELECT crew_id, timepoint, panel, name, value, unit, ref_min, ref_max, provenance
         FROM biomarkers
@@ -169,7 +190,7 @@ def get_biomarkers(
                 if curr is None or CRI_PANEL_PRIORITY.get(p, 99) < CRI_PANEL_PRIORITY.get(curr, 99):
                     chosen_cri_panels[c_upper] = p
 
-    norm_names = {re.sub(r"[\s\-_]", "", n).upper() for n in names} if names else None
+    norm_names = set(norm_names_key) if norm_names_key is not None else None
 
     results: List[Biomarker] = []
     seen = set()
@@ -224,39 +245,38 @@ def get_biomarkers(
         "R+194": 7,
     }
     results.sort(key=lambda b: (timepoint_order.get(b.timepoint, 8), b.name))
-    return results
+    return tuple(results)
+
+
+def get_biomarkers(
+    crew_id: str,
+    panel: Optional[str] = None,
+    names: Optional[List[str]] = None,
+    for_cri: bool = False,
+) -> List[Biomarker]:
+    """Retrieves blood biomarkers for astronaut across NASA OSDR timepoints in chronological order.
+
+    Normalizes analyte names to canonical form before rows reach cri_engine ("Il 6", "Il6", "IL-6" -> "IL-6").
+    Dedupes identical rows within the same panel and unit.
+    For CRI (for_cri=True), selects only one preferred panel per canonical marker (CARDIO_EVE > IMMUNE_HD71 > INFLAMMATION_ALAMAR > CMP).
+    For router filtering:
+      - Default (panel=None, names=None): short list of CRP, Fibrinogen plus the CMP panel.
+      - panel='all': all panels returned.
+      - panel=<panel_name>: filtered to that specific panel.
+      - names=[...]: filtered to matching analytes (case/space/dash insensitive).
+    """
+    db_posix, mtime_ns = _db_cache_key()
+    norm_names_key = (
+        tuple(sorted({re.sub(r"[\s\-_]", "", n).upper() for n in names}))
+        if names is not None
+        else None
+    )
+    return list(_load_crew_biomarkers(db_posix, mtime_ns, crew_id, panel, norm_names_key, for_cri))
 
 
 def get_vitals_window(crew_id: str, sol: int, window: int) -> List[VitalPoint]:
     """Retrieves exactly window vitals points ending at sol (fewer only if sol < window)."""
-    conn = _get_connection()
-    query = """
-        SELECT crew_id, sol, hr, hrv, sleep_hours, radiation_msv, exercise_min, mood, provenance
-        FROM vitals
-        WHERE crew_id = ? AND sol <= ?
-        ORDER BY sol DESC
-        LIMIT ?
-    """
-    try:
-        cursor = conn.execute(query, (crew_id, sol, window))
-        rows = cursor.fetchall()
-    except sqlite3.OperationalError:
-        raise DataUnavailableError("Database service is unavailable") from None
-    finally:
-        conn.close()
-
-    rows = sorted(rows, key=lambda r: r["sol"])
-    return [
-        VitalPoint(
-            crewId=r["crew_id"],
-            sol=r["sol"],
-            hr=r["hr"],
-            hrv=r["hrv"],
-            sleepHours=r["sleep_hours"],
-            radiationMsv=r["radiation_msv"],
-            exerciseMin=r["exercise_min"],
-            mood=r["mood"],
-            provenance=r["provenance"],
-        )
-        for r in rows
-    ]
+    db_posix, mtime_ns = _db_cache_key()
+    all_vitals = _load_crew_vitals(db_posix, mtime_ns, crew_id)
+    eligible = [v for v in all_vitals if v.sol <= sol]
+    return eligible[-window:] if window > 0 else []

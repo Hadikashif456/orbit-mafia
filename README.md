@@ -246,8 +246,8 @@ Measured by `backend/scripts/eval_anomaly.py`. **All figures are on synthetic cr
 
 | Metric | Result |
 |---|---|
-| Early-warning lead time (C002) | _fill in from final eval run_ |
-| False-positive rate on healthy crew | _fill in from final eval run_ |
+| Early-warning lead time (C002) | **2 sols (~48 hours)** ahead of Amber (Sol 141 → 143); **4 sols (~96 hours)** ahead of CRI < 60 (Sol 145) |
+| False-positive rate on healthy crew | **1.71%** (2 / 117 crew-sols across Sol 101–139) |
 
 ---
 

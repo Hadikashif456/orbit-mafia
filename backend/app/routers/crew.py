@@ -10,6 +10,7 @@ from app.security.validators import validate_window
 from app.services.crew_service import (
     CALLSIGNS,
     compute_cri_for,
+    compute_cri_range,
     crew_trend,
     cri_series,
     top_driver_label,
@@ -41,8 +42,9 @@ def get_crew_summaries(
     try:
         summaries: List[CrewSummary] = []
         for crew_id in ["C001", "C002", "C003", "C004"]:
-            res = compute_cri_for(crew_id, current_sol)
-            spark = cri_series(crew_id, current_sol, n=5)
+            series = compute_cri_range(crew_id, max(1, current_sol - 4), current_sol)
+            res = series[-1]
+            spark = [item.cri for item in series]
             driver = top_driver_label(res)
             summaries.append(
                 CrewSummary(
@@ -119,7 +121,7 @@ def get_crew_cri_range(
             detail="Range cannot exceed 60 sols.",
         )
     try:
-        return [compute_cri_for(id, s) for s in range(from_sol, to_sol + 1)]
+        return compute_cri_range(id, from_sol, to_sol)
     except DataUnavailableError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

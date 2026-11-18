@@ -9,6 +9,9 @@ import { COMPOSITE_FRAG, FULLSCREEN_VERT } from './shaders/composite';
  * low-resolution grids (far = small glyphs, near = large glyphs). A composite
  * pass then draws the actual characters from a glyph atlas. Nothing on screen
  * is an image: every lit pixel belongs to a glyph, plus a faint bloom behind.
+ *
+ * Performance: scene shaders and framebuffers are compiled/allocated lazily on
+ * first use rather than all upfront, avoiding multi-second startup stalls.
  */
 
 /**
@@ -62,7 +65,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
 export class AsciiRenderer {
   private readonly canvas: HTMLCanvasElement;
   private readonly gl: WebGL2RenderingContext;
-  private readonly definitions: readonly SceneDefinition[];
+  private readonly definitionsById = new Map<SceneId, SceneDefinition>();
   private scenes = new Map<SceneId, SceneGpu>();
   private composite: Program | null = null;
   private atlasNear: WebGLTexture | null = null;
@@ -84,7 +87,9 @@ export class AsciiRenderer {
     if (!gl) throw new Error('WebGL2 is not available');
     this.canvas = canvas;
     this.gl = gl;
-    this.definitions = definitions;
+    for (const def of definitions) {
+      this.definitionsById.set(def.id, def);
+    }
     canvas.addEventListener('webglcontextlost', this.onContextLost);
     canvas.addEventListener('webglcontextrestored', this.onContextRestored);
     this.build();
@@ -99,10 +104,12 @@ export class AsciiRenderer {
     const { width, height, cellNear, cellFar } = this;
     this.build();
     this.lost = false;
-    this.allocate(width, height, cellNear, cellFar);
+    if (width > 0 && height > 0) {
+      this.allocate(width, height, cellNear, cellFar);
+    }
   };
 
-  /** Compile programs. Called at start and again after a restored context. */
+  /** Compile composite program at startup; individual scenes compile lazily on demand. */
   private build(): void {
     this.scenes = new Map();
     this.atlasNear = null;
@@ -110,14 +117,37 @@ export class AsciiRenderer {
     this.width = 0;
     this.height = 0;
     this.composite = this.link(COMPOSITE_FRAG, 'composite');
-    for (const definition of this.definitions) {
-      this.scenes.set(definition.id, {
+  }
+
+  /** Lazily compile a scene shader and allocate its render layers when first needed. */
+  private ensureScene(id: SceneId): SceneGpu | null {
+    let scene = this.scenes.get(id);
+    if (!scene) {
+      const definition = this.definitionsById.get(id);
+      if (!definition) return null;
+      scene = {
         definition,
         program: this.link(definition.fragment, definition.id),
         far: null,
         near: null,
-      });
+      };
+      this.scenes.set(id, scene);
     }
+    if (this.width > 0 && this.height > 0 && this.cellFar[0] > 0 && this.cellNear[0] > 0) {
+      if (!scene.far) {
+        scene.far = this.makeLayer(
+          Math.ceil(this.width / this.cellFar[0]),
+          Math.ceil(this.height / this.cellFar[1]),
+        );
+      }
+      if (!scene.near) {
+        scene.near = this.makeLayer(
+          Math.ceil(this.width / this.cellNear[0]),
+          Math.ceil(this.height / this.cellNear[1]),
+        );
+      }
+    }
+    return scene;
   }
 
   private compile(type: number, source: string, label: string): WebGLShader {
@@ -256,12 +286,19 @@ export class AsciiRenderer {
       this.atlasFar = this.buildAtlas(cellFar[0], cellFar[1]);
     }
 
+    // Re-allocate framebuffers only for scenes already compiled; uncompiled scenes allocate on first use.
     for (const scene of this.scenes.values()) {
       this.freeLayer(scene.far);
       this.freeLayer(scene.near);
       scene.far = this.makeLayer(Math.ceil(width / cellFar[0]), Math.ceil(height / cellFar[1]));
       scene.near = this.makeLayer(Math.ceil(width / cellNear[0]), Math.ceil(height / cellNear[1]));
     }
+  }
+
+  /** Compile and allocate a single scene ahead of time (e.g., during browser idle). */
+  warmup(id: SceneId): void {
+    if (this.lost || this.width === 0) return;
+    this.ensureScene(id);
   }
 
   /**
@@ -319,14 +356,17 @@ export class AsciiRenderer {
   }
 
   render(frame: FrameParams): void {
-    const from = this.scenes.get(frame.from);
-    const to = this.scenes.get(frame.to);
     const program = this.composite;
-    if (this.lost || this.width === 0 || !from || !to || !program) return;
-    if (!from.far || !from.near || !to.far || !to.near) return;
+    if (this.lost || this.width === 0 || !program) return;
+
+    const from = this.ensureScene(frame.from);
+    if (!from || !from.far || !from.near) return;
+
+    const blending = frame.mix > 0 && frame.from !== frame.to;
+    const to = blending ? this.ensureScene(frame.to) : from;
+    if (!to || !to.far || !to.near) return;
 
     const gl = this.gl;
-    const blending = frame.mix > 0 && from !== to;
     this.drawScene(from, frame);
     if (blending) this.drawScene(to, frame);
     const second = blending ? to : from;

@@ -37,11 +37,21 @@ def get_scenario_state(sol: int) -> ScenarioStateResponse:
 
     crew_summaries: List[CrewSummary] = []
     alerts: List[Alert] = []
+    cri_cache = {}
+
+    def _cri(c_id: str, s_val: int):
+        key = (c_id, s_val)
+        if key not in cri_cache:
+            cri_cache[key] = compute_cri_for(c_id, s_val)
+        return cri_cache[key]
 
     for cid in CREW_IDS:
         callsign = CALLSIGNS.get(cid, f"Cmdr {cid}")
-        current_cri_res = compute_cri_for(cid, sol)
-        sparkline = cri_series(cid, sol, n=5)
+        spark_start = max(1, sol - 4)
+        for s_val in range(spark_start, sol + 1):
+            _cri(cid, s_val)
+        current_cri_res = _cri(cid, sol)
+        sparkline = [_cri(cid, s_val).cri for s_val in range(spark_start, sol + 1)]
         top_driver = top_driver_label(current_cri_res)
 
         crew_summaries.append(
@@ -60,7 +70,7 @@ def get_scenario_state(sol: int) -> ScenarioStateResponse:
         if current_cri_res.status in ("amber", "red"):
             # criFrom = the HIGHEST CRI among the 3 sols BEFORE the current sol (e.g. Sol 144 -> max of Sol 141-143 = 86.6)
             sols_before = list(range(max(1, sol - 3), sol))
-            cri_from = max(compute_cri_for(cid, s).cri for s in sols_before) if sols_before else current_cri_res.cri
+            cri_from = max(_cri(cid, s).cri for s in sols_before) if sols_before else current_cri_res.cri
             cri_to = current_cri_res.cri
 
             # Initial severity determination
@@ -76,10 +86,10 @@ def get_scenario_state(sol: int) -> ScenarioStateResponse:
 
             # Severity must never go down while the risk flag stays raised and CRI is falling (no warning -> watch -> warning flip)
             for s_prev in range(max(140, sol - 1), sol):
-                prev_cri = compute_cri_for(cid, s_prev).cri
+                prev_cri = _cri(cid, s_prev).cri
                 if prev_cri >= current_cri_res.cri:
                     prev_sols_before = list(range(max(1, s_prev - 3), s_prev))
-                    prev_from = max(compute_cri_for(cid, s).cri for s in prev_sols_before) if prev_sols_before else prev_cri
+                    prev_from = max(_cri(cid, s).cri for s in prev_sols_before) if prev_sols_before else prev_cri
                     if prev_cri < 50.0:
                         p_sev = 3
                     elif prev_cri < 60.0 or (prev_from - prev_cri) >= 10.0:
@@ -100,7 +110,7 @@ def get_scenario_state(sol: int) -> ScenarioStateResponse:
             z_flags = zscore_flags(current_pt, rolling_base)
 
             recent_cri_vals = [
-                compute_cri_for(cid, s).cri
+                _cri(cid, s).cri
                 for s in (max(1, sol - 2), max(1, sol - 1), sol)
             ]
             r_flag = risk_flag(
